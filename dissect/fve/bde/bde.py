@@ -439,7 +439,7 @@ class BitlockerStream(AlignedStream):
                 region_end = region_start + region_size
 
                 # Starts outside a region but ends in or after it
-                if sector < region_start and sector + count > region_start:
+                if sector < region_start < sector + count:
                     remaining_sectors = min(region_start - sector, count)
 
                     yield from self._iter_run_state(sector, remaining_sectors)
@@ -448,7 +448,7 @@ class BitlockerStream(AlignedStream):
                     count -= remaining_sectors
 
                 # Starts in a region
-                if sector >= region_start and sector < region_end:
+                if region_start <= sector < region_end:
                     remaining_sectors = min(region_end - sector, count)
 
                     yield (BitlockerStream.RUN_SPARSE, sector, remaining_sectors)
