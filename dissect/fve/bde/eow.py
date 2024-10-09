@@ -196,13 +196,13 @@ def _iter_bitmap(bitmap: bytes, size: int, start: int, count: int) -> Iterator[t
             break
 
         if (current_bit, byte) == (0, 0) or (current_bit, byte) == (1, 0xFF):
-            max_count = min(min(count, remaining_bits), 8 - bit_idx)
+            max_count = min(count, remaining_bits, 8 - bit_idx)
             current_count += max_count
             remaining_bits -= max_count
             count -= max_count
             bit_idx = 0
         else:
-            for cur_bit_idx in range(bit_idx, min(min(count, remaining_bits), 8)):
+            for cur_bit_idx in range(bit_idx, min(count, remaining_bits, 8)):
                 bit_set = (byte & (1 << cur_bit_idx)) >> cur_bit_idx
 
                 if bit_set == current_bit:
