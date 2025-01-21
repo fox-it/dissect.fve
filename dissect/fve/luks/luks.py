@@ -6,8 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import io
-from pathlib import Path
-from typing import BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
 import argon2
@@ -22,6 +21,9 @@ from dissect.fve.luks.c_luks import (
     c_luks,
 )
 from dissect.fve.luks.metadata import Digest, Keyslot, Metadata, Segment
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class LUKS:
@@ -227,7 +229,8 @@ def derive_passphrase_key(passphrase: bytes, keyslot: Keyslot) -> bytes:
 
     if kdf.type == "pbkdf2":
         return hashlib.pbkdf2_hmac(kdf.hash, passphrase, kdf.salt, kdf.iterations, keyslot.key_size)
-    elif kdf.type.startswith("argon2"):
+
+    if kdf.type.startswith("argon2"):
         return argon2.low_level.hash_secret_raw(
             passphrase,
             kdf.salt,
@@ -237,8 +240,8 @@ def derive_passphrase_key(passphrase: bytes, keyslot: Keyslot) -> bytes:
             keyslot.key_size,
             {"argon2i": argon2.low_level.Type.I, "argon2id": argon2.low_level.Type.ID}[kdf.type],
         )
-    else:
-        raise NotImplementedError(f"Unsupported kdf algorithm: {kdf.type}")
+
+    raise NotImplementedError(f"Unsupported kdf algorithm: {kdf.type}")
 
 
 class CryptStream(AlignedStream):

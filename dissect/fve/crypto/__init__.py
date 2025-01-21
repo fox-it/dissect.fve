@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from Crypto.Cipher import AES
 
@@ -26,7 +26,7 @@ IV_MODE_MAP = {
 
 
 def create_cipher(
-    spec: str, key: bytes, key_size: Optional[int] = None, sector_size: int = 512, iv_sector_size: int = 512
+    spec: str, key: bytes, key_size: int | None = None, sector_size: int = 512, iv_sector_size: int = 512
 ) -> Cipher:
     """Create a cipher object according to a given cipher specification and key.
 
@@ -65,8 +65,8 @@ def create_cipher(
 
 
 def parse_cipher_spec(
-    spec: str, key_size: Optional[int] = None, key_size_hint: Optional[int] = None
-) -> tuple[str, str, int, str, Optional[str]]:
+    spec: str, key_size: int | None = None, key_size_hint: int | None = None
+) -> tuple[str, str, int, str, str | None]:
     """Parse a cipher specification into a tuple of (cipher, mode, key size, iv mode, iv options).
 
     Inspired by and accepts LUKS/dm-crypt-like cipher specifications in the form of::

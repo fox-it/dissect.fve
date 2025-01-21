@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import struct
 from typing import BinaryIO
@@ -102,7 +104,7 @@ def test_bde_suspended(bde_suspended: BinaryIO) -> None:
 
 
 @pytest.mark.parametrize(
-    "test_file, passphrase, key_type",
+    ("test_file", "passphrase", "key_type"),
     [
         ("_data/bde/aes_128.bin.gz", "password12!@", c_bde.FVE_KEY_TYPE.AES_128),
         ("_data/bde/aes_256.bin.gz", "password12!@", c_bde.FVE_KEY_TYPE.AES_256),
@@ -118,7 +120,7 @@ def test_bde_passphrase(test_file: str, passphrase: str, key_type: c_bde.FVE_KEY
 
 
 @pytest.mark.parametrize(
-    "test_file, recovery, key_type",
+    ("test_file", "recovery", "key_type"),
     [
         (
             "_data/bde/recovery_password.bin.gz",
@@ -133,7 +135,7 @@ def test_bde_recovery(test_file: str, recovery: str, key_type: c_bde.FVE_KEY_TYP
 
 
 @pytest.mark.parametrize(
-    "test_file, bek_file, key_type",
+    ("test_file", "bek_file", "key_type"),
     [
         (
             "_data/bde/recovery_key.bin.gz",

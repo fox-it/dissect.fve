@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import datetime
 import hashlib
 from binascii import crc32
 from functools import cached_property
 from io import BytesIO
-from typing import BinaryIO, Iterator
+from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
 from Crypto.Cipher import AES
@@ -22,6 +21,10 @@ from dissect.fve.bde.c_bde import (
     c_bde,
 )
 from dissect.fve.exceptions import InvalidHeaderError
+
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Iterator
 
 
 class Information:
@@ -185,21 +188,25 @@ class Dataset:
         """Find the description datum."""
         for datum in self.find_datum(FVE_DATUM_ROLE.DESCRIPTION, FVE_DATUM_TYPE.UNICODE):
             return datum.text
+        return None
 
     def find_virtualization_info(self) -> VirtualizationInfoDatum | None:
         """Find the virtualization info datum."""
         for datum in self.find_datum(FVE_DATUM_ROLE.VIRTUALIZATION_INFO, FVE_DATUM_TYPE.VIRTUALIZATION_INFO):
             return datum
+        return None
 
     def find_startup_key(self) -> ExternalInfoDatum | None:
         """Find the external startup/recovery key information."""
         for datum in self.find_datum(FVE_DATUM_ROLE.STARTUP_KEY, FVE_DATUM_TYPE.EXTERNAL_INFO):
             return datum
+        return None
 
     def find_fvek(self) -> AesCcmEncryptedDatum | None:
         """Find the encrypted FVEK."""
         for datum in self.find_datum(FVE_DATUM_ROLE.FULL_VOLUME_ENCRYPTION_KEY, FVE_DATUM_TYPE.AES_CCM_ENCRYPTED_KEY):
             return datum
+        return None
 
     def find_vmk(
         self,
@@ -220,6 +227,7 @@ class Dataset:
         """Find the clear key VMK (for paused volumes)."""
         for vmk in self.find_vmk(FVE_KEY_PROTECTOR.CLEAR, max_priority=0xFF, mask=0x0000):
             return vmk
+        return None
 
     def find_external_vmk(self) -> Iterator[VmkInfoDatum]:
         """Find the external VMK."""
@@ -497,7 +505,7 @@ class TpmEncryptedBlobDatum(Datum):
 
 
 class ValidationEntry:
-    def __init__(self, fh):
+    def __init__(self, fh: BinaryIO):
         self._entry = c_bde.FVE_DATUM_VALIDATION_ENTRY(fh)
 
     def __repr__(self) -> str:
@@ -544,54 +552,64 @@ class VmkInfoDatum(Datum):
         encrypted_key = self.aes_ccm_encrypted_key()
         return encrypted_key.unbox(key)
 
-    def label(self) -> str:
+    def label(self) -> str | None:
         for datum in self.find_property(FVE_DATUM_TYPE.UNICODE):
             return datum.text
+        return None
 
-    def asymmetric_encrypted_key(self) -> AsymmetricEncryptedDatum:
+    def asymmetric_encrypted_key(self) -> AsymmetricEncryptedDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.ASYMMETRIC_ENCRYPTED_KEY):
             return datum
+        return None
 
-    def exported_key(self) -> ExportedPublicKeyDatum:
+    def exported_key(self) -> ExportedPublicKeyDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.EXPORTED_KEY):
             return datum
+        return None
 
-    def tpm_encrypted_blob(self) -> TpmEncryptedBlobDatum:
+    def tpm_encrypted_blob(self) -> TpmEncryptedBlobDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.TPM_ENCRYPTED_BLOB):
             return datum
+        return None
 
-    def aes_ccm_encrypted_key(self) -> AesCcmEncryptedDatum:
+    def aes_ccm_encrypted_key(self) -> AesCcmEncryptedDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.AES_CCM_ENCRYPTED_KEY):
             return datum
+        return None
 
-    def public_key_info(self) -> PublicKeyInfoDatum:
+    def public_key_info(self) -> PublicKeyInfoDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.PUBLIC_KEY_INFO):
             return datum
+        return None
 
     def use_keys(self) -> list[UseKeyDatum]:
         return list(self.find_property(FVE_DATUM_TYPE.USE_KEY))
 
-    def use_key(self, key_type: FVE_KEY_TYPE) -> UseKeyDatum:
+    def use_key(self, key_type: FVE_KEY_TYPE) -> UseKeyDatum | None:
         for datum in self.use_keys():
             if key_type is None or datum.key_type == key_type:
                 return datum
+        return None
 
     def stretch_keys(self) -> list[StretchKeyDatum]:
         return list(self.find_property(FVE_DATUM_TYPE.STRETCH_KEY))
 
-    def stretch_key(self, key_type: FVE_KEY_TYPE) -> StretchKeyDatum:
+    def stretch_key(self, key_type: FVE_KEY_TYPE) -> StretchKeyDatum | None:
         for datum in self.stretch_keys():
             if key_type is None or datum.key_type == key_type:
                 return datum
+        return None
 
-    def clear_key(self) -> KeyDatum:
+    def clear_key(self) -> KeyDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.KEY):
             return datum
+        return None
 
     def is_enhanced_pin(self) -> bool:
         for stretch_key in self.stretch_keys():
             if stretch_key.key_type == FVE_KEY_TYPE.AES_CCM_256_2 and stretch_key.key_flags & FVE_KEY_FLAG.ENHANCED_PIN:
                 return True
+        return False
 
     def is_enhanced_crypto(self) -> bool:
         for stretch_key in self.stretch_keys():
@@ -600,6 +618,7 @@ class VmkInfoDatum(Datum):
                 and stretch_key.key_flags & FVE_KEY_FLAG.ENHANCED_CRYPTO
             ):
                 return True
+        return False
 
     def uses_pbkdf2(self) -> bool:
         for stretch_key in self.stretch_keys():
@@ -608,6 +627,7 @@ class VmkInfoDatum(Datum):
                 and stretch_key.key_flags & FVE_KEY_FLAG.PBKDF2
             ):
                 return True
+        return False
 
 
 class ExternalInfoDatum(Datum):
@@ -630,10 +650,12 @@ class ExternalInfoDatum(Datum):
     def label(self) -> str | None:
         for datum in self.find_property(FVE_DATUM_TYPE.UNICODE):
             return datum.text
+        return None
 
     def external_key(self) -> KeyDatum | None:
         for datum in self.find_property(FVE_DATUM_TYPE.KEY):
             return datum
+        return None
 
 
 class UpdateDatum(Datum):

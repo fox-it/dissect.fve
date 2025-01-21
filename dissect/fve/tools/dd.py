@@ -46,18 +46,18 @@ except ImportError:
 
             self.position = 0
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             pass
 
-        def __exit__(self, *args, **kwargs):
+        def __exit__(self, *args, **kwargs) -> None:
             sys.stderr.write("\n")
             sys.stderr.flush()
 
-        def add_task(self, name, filename, total, **kwargs):
+        def add_task(self, name: str, filename: str, total: int, **kwargs) -> None:
             self.filename = filename
             self.total = total
 
-        def update(self, task_id, advance):
+        def update(self, task_id: int, advance: int) -> None:
             self.position += advance
 
             sys.stderr.write(f"\r{self.filename} {(self.position / self.total) * 100:0.2f}%")
@@ -99,11 +99,12 @@ def open_fve(vol: BinaryIO, args: argparse.Namespace) -> BinaryIO:
     # Currently only BDE and LUKS
     if is_bde_volume(vol):
         return _open_bde(vol, args)
-    elif is_luks_volume(vol):
+
+    if is_luks_volume(vol):
         return _open_luks(vol, args)
-    else:
-        # Plain volume, return itself
-        return vol
+
+    # Plain volume, return itself
+    return vol
 
 
 def _open_bde(vol: BinaryIO, args: argparse.Namespace) -> BinaryIO | None:
@@ -136,8 +137,9 @@ def _open_bde(vol: BinaryIO, args: argparse.Namespace) -> BinaryIO | None:
 
     if not bde.unlocked:
         log("Failed to unlock BDE volume")
-    else:
-        return bde.open()
+        return None
+
+    return bde.open()
 
 
 def _open_luks(vol: BinaryIO, args: argparse.Namespace) -> BinaryIO | None:
@@ -158,11 +160,12 @@ def _open_luks(vol: BinaryIO, args: argparse.Namespace) -> BinaryIO | None:
 
     if not luks.unlocked:
         log("Failed to unlock LUKS volume")
-    else:
-        return luks.open()
+        return None
+
+    return luks.open()
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=Path, help="path to container with encrypted volume")
     parser.add_argument("-p", "--passphrase", type=str, help="user passphrase")
@@ -206,26 +209,27 @@ def main() -> None:
     task_id = progress.add_task("decrypt", start=True, visible=True, filename=in_path.name, total=disk.size)
 
     offset = 0
-    with progress:
-        with args.output.open("wb") as fh:
-            for vol, fve_vol in volumes:
-                if offset != vol.offset:
-                    # We're not to the beginning of the volume yet, fill in
-                    stream(disk, fh, offset, vol.offset - offset, task_id=task_id)
-                    offset = vol.offset
+    with progress, args.output.open("wb") as fh:
+        for vol, fve_vol in volumes:
+            if offset != vol.offset:
+                # We're not to the beginning of the volume yet, fill in
+                stream(disk, fh, offset, vol.offset - offset, task_id=task_id)
+                offset = vol.offset
 
-                # Stream the decrypted volume
-                src_vol = fve_vol or vol
-                stream(src_vol, fh, 0, src_vol.size, task_id=task_id)
-                offset += src_vol.size
+            # Stream the decrypted volume
+            src_vol = fve_vol or vol
+            stream(src_vol, fh, 0, src_vol.size, task_id=task_id)
+            offset += src_vol.size
 
-                if isinstance(fve_vol, CryptStream):
-                    # LUKS volumes don't actually start at the beginning like Bitlocker
-                    offset += fve_vol.offset
+            if isinstance(fve_vol, CryptStream):
+                # LUKS volumes don't actually start at the beginning like Bitlocker
+                offset += fve_vol.offset
 
-            # There's data after the volumes until the end of the disk
-            if offset != disk.size:
-                stream(disk, fh, offset, disk.size - offset, task_id=task_id)
+        # There's data after the volumes until the end of the disk
+        if offset != disk.size:
+            stream(disk, fh, offset, disk.size - offset, task_id=task_id)
+
+    return 0
 
 
 if __name__ == "__main__":

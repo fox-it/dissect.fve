@@ -23,18 +23,18 @@ POINTER_SIZE = 8 if sys.maxsize > 2**32 else 4
 
 if _raw_api.backend == "cffi":
 
-    def get_iv_view(cipher, size):
+    def get_iv_view(cipher: AES.CbcMode | AES.EcbMode, size: int) -> memoryview:
         return _raw_api.ffi.cast(_raw_api.uint8_t_type, cipher._state.get() + POINTER_SIZE)[0:size]
 
 elif _raw_api.backend == "ctypes":
     import ctypes
 
-    def get_iv_view(cipher, size):
+    def get_iv_view(cipher: AES.CbcMode | AES.EcbMode, size: int) -> memoryview:
         return ctypes.cast(cipher._state.get().value + POINTER_SIZE, ctypes.POINTER(ctypes.c_char * size))[0]
 
 else:
 
-    def get_iv_view(cipher, size):
+    def get_iv_view(cipher: AES.CbcMode | AES.EcbMode, size: int) -> memoryview:
         raise NotImplementedError("Unsupported pycryptodome backend")
 
 
@@ -112,7 +112,7 @@ class XtsMode(Cipher):
 
     def __init__(
         self,
-        factory: Any,
+        factory: AES,
         key: bytes,
         key_size: int,
         iv_mode: type[IV],
@@ -233,7 +233,7 @@ class Elephant(IV):
 
 
 def _create_cipher_factory(mode: type[Cipher]) -> Callable[..., Cipher]:
-    def cipher_factory(factory: Any, **kwargs) -> Cipher:
+    def cipher_factory(factory: AES, **kwargs) -> Cipher:
         try:
             key = kwargs.pop("key")
             key_size = kwargs.pop("key_size")

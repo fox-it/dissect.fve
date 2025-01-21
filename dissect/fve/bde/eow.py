@@ -6,7 +6,7 @@ from __future__ import annotations
 from binascii import crc32
 from functools import cached_property
 from io import BytesIO
-from typing import BinaryIO, Iterator
+from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.fve.bde.c_bde import (
     EOW_BM_SIGNATURE,
@@ -15,6 +15,9 @@ from dissect.fve.bde.c_bde import (
     c_bde,
 )
 from dissect.fve.exceptions import InvalidHeaderError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class EowInformation:
@@ -51,12 +54,7 @@ class EowInformation:
 
     @cached_property
     def bitmaps(self) -> list[EowBitmap]:
-        result = []
-
-        for offset in self.header.BitmapOffsets:
-            result.append(EowBitmap(self.fh, offset))
-
-        return result
+        return [EowBitmap(self.fh, offset) for offset in self.header.BitmapOffsets]
 
 
 class EowBitmap:

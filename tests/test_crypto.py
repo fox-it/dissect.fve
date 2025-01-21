@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import hashlib
-from typing import Optional
 
 import pytest
 
@@ -251,19 +252,14 @@ def test_crypto_elephant_diffuser_b() -> None:
     ],
 )
 def test_crypto_parse_cipher_spec(
-    spec: str,
-    key_size: Optional[int],
-    key_size_hint: Optional[int],
-    expected: tuple[str, str, int, str, Optional[str]],
+    spec: str, key_size: int | None, key_size_hint: int | None, expected: tuple[str, str, int, str, str | None]
 ) -> None:
     assert parse_cipher_spec(spec, key_size, key_size_hint) == expected
 
 
 def test_crypto_parse_cipher_spec_invalid() -> None:
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError, match="Missing key size"):
         parse_cipher_spec("aes")
-    assert str(exc.value) == "Missing key size"
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError, match="Unexpected cipher spec format"):
         parse_cipher_spec("aes-cbc-garbage-essiv")
-    assert str(exc.value) == "Unexpected cipher spec format"
