@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dissect.fve.luks.luks import derive_passphrase_key
 from dissect.fve.luks.metadata import Keyslot
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 
 from dissect.fve.crypto.utils import xor

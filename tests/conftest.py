@@ -1,8 +1,13 @@
-from typing import BinaryIO, Iterator
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, BinaryIO
 
 import pytest
 
 from tests._utils import open_file_gz
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @pytest.fixture

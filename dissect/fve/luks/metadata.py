@@ -1,44 +1,53 @@
-# NOTE: We can't really use __future__.annotations in this file because the JsonItem parsing is type hinting based.
+from __future__ import annotations
 
 import base64
 import json
+import sys
 from dataclasses import dataclass, field, fields
-from typing import Any, Optional, Union, get_args, get_origin
+
+if sys.version_info >= (3, 10):
+    from types import UnionType  # novermin
+else:
+    # Python 3.9
+    from typing import Union as UnionType
+
+from typing import Any, Optional, get_args, get_origin, get_type_hints
 
 from dissect.fve.luks.c_luks import c_luks
 
 
 @dataclass
 class JsonItem:
-    _raw: Optional[dict] = field(init=False, repr=False)
+    _raw: dict | None = field(init=False, repr=False)
 
     @classmethod
-    def from_json(cls, obj: str) -> "JsonItem":  # Self, but that's >=3.11
+    def from_json(cls, obj: str) -> JsonItem:  # Self, but that's >=3.11
         return cls.from_dict(json.loads(obj))
 
     @classmethod
-    def from_dict(cls, obj: dict[str, Union[str, int, dict, list]]) -> "JsonItem":  # Self, but that's >=3.11
+    def from_dict(cls, obj: dict[str, str | int | dict | list]) -> JsonItem:  # Self, but that's >=3.11
         kwargs = {}
         raw = None
+        type_info = get_type_hints(cls)
         for fld in fields(cls):
             if fld.name == "_raw":
                 raw = obj
                 continue
 
             value = obj.get(fld.name, None)
-            kwargs[fld.name] = JsonItem._parse_type(fld.type, value)
+            kwargs[fld.name] = JsonItem._parse_type(type_info[fld.name], value)
 
         result = cls(**kwargs)
         result._raw = raw
         return result
 
     @staticmethod
-    def _parse_type(type_: Any, value: Union[str, int, dict, list]) -> Union[str, int, dict, list, bytes]:
+    def _parse_type(type_: Any, value: str | int | dict | list) -> str | int | dict | list | bytes:
         result = None
 
         if type_ == Optional[type_]:
             result = JsonItem._parse_type(get_args(type_)[0], value) if value is not None else None
-        elif get_origin(type_) is Union:
+        elif get_origin(type_) is UnionType:
             for atype in get_args(type_):
                 try:
                     result = JsonItem._parse_type(atype, value)
@@ -64,9 +73,9 @@ class JsonItem:
 @dataclass
 class Config(JsonItem):
     json_size: int
-    keyslots_size: Optional[int]
-    flags: Optional[list[str]]
-    requirements: Optional[list[str]]
+    keyslots_size: int | None
+    flags: list[str] | None
+    requirements: list[str] | None
 
 
 @dataclass
@@ -75,14 +84,14 @@ class KeyslotArea(JsonItem):
     offset: int
     size: int
     # if type == "raw"
-    encryption: Optional[str]
-    key_size: Optional[int]
+    encryption: str | None
+    key_size: int | None
     # type == "datashift-checksum" has all the fields of "checksum" and "datashift"
     # if type == "checksum"
-    hash: Optional[str]
-    sector_size: Optional[int]
+    hash: str | None
+    sector_size: int | None
     # if type in ("datashift", "datashift-journal")
-    shift_size: Optional[int]
+    shift_size: int | None
 
 
 @dataclass
@@ -90,20 +99,20 @@ class KeyslotKdf(JsonItem):
     type: str
     salt: bytes
     # if type == "pbkdf2"
-    hash: Optional[str]
-    iterations: Optional[int]
+    hash: str | None
+    iterations: int | None
     # if type in ("argon2i", "argin2id")
-    time: Optional[int]
-    memory: Optional[int]
-    cpus: Optional[int]
+    time: int | None
+    memory: int | None
+    cpus: int | None
 
 
 @dataclass
 class KeyslotAf(JsonItem):
     type: str
     # if type == "luks1"
-    stripes: Optional[int]
-    hash: Optional[str]
+    stripes: int | None
+    hash: str | None
 
 
 @dataclass
@@ -111,13 +120,13 @@ class Keyslot(JsonItem):
     type: str
     key_size: int
     area: KeyslotArea
-    priority: Optional[int]
+    priority: int | None
     # if type == "luks2"
-    kdf: Optional[KeyslotKdf]
-    af: Optional[KeyslotAf]
+    kdf: KeyslotKdf | None
+    af: KeyslotAf | None
     # if type == "reencrypt"
-    mode: Optional[str]
-    direction: Optional[str]
+    mode: str | None
+    direction: str | None
 
 
 @dataclass
@@ -128,8 +137,8 @@ class Digest(JsonItem):
     salt: bytes
     digest: bytes
     # if type == "pbkdf2"
-    hash: Optional[str]
-    iterations: Optional[int]
+    hash: str | None
+    iterations: int | None
 
 
 @dataclass
@@ -143,13 +152,13 @@ class SegmentIntegrity(JsonItem):
 class Segment(JsonItem):
     type: str
     offset: int
-    size: Union[int, str]
-    flags: Optional[list[str]]
+    size: int | str
+    flags: list[str] | None
     # if type == "crypt"
-    iv_tweak: Optional[int]
-    encryption: Optional[str]
-    sector_size: Optional[int]
-    integrity: Optional[SegmentIntegrity]
+    iv_tweak: int | None
+    encryption: str | None
+    sector_size: int | None
+    integrity: SegmentIntegrity | None
 
 
 @dataclass
@@ -167,7 +176,7 @@ class Metadata(JsonItem):
     tokens: dict[int, Token]
 
     @classmethod
-    def from_luks1_header(self, header: c_luks.luks_phdr) -> "Metadata":
+    def from_luks1_header(self, header: c_luks.luks_phdr) -> Metadata:
         """Map LUKS1 header information into a :class:`Metadata` dataclass."""
         config = Config(0, None, None, None)
         keyslots = {}
@@ -175,7 +184,7 @@ class Metadata(JsonItem):
         segments = {}
         tokens = {}
 
-        cipher_spec = "-".join(map(lambda v: v.rstrip(b"\x00").decode(), [header.cipherName, header.cipherMode]))
+        cipher_spec = "-".join(v.rstrip(b"\x00").decode() for v in [header.cipherName, header.cipherMode])
         hash_spec = header.hashSpec.rstrip(b"\x00").decode()
 
         for idx, block in enumerate(header.keyblock):
@@ -232,3 +241,14 @@ class Metadata(JsonItem):
         )
 
         return Metadata(config, keyslots, digests, segments, tokens)
+
+
+# Backward compatibility with Python 3.9
+if sys.version_info < (3, 10):
+    items = list(globals().values())
+    for obj in items:
+        if isinstance(obj, type) and issubclass(obj, JsonItem):
+            for k, v in obj.__annotations__.items():
+                if isinstance(v, str) and "|" in v:
+                    # Because we import Union as UnionType
+                    obj.__annotations__[k] = f"UnionType[{v.replace(' | ', ', ')}]"

@@ -25,7 +25,7 @@ class Cipher:
         self.iv_mode = iv_mode(self, key, iv_options)
 
     def _crypt_sector(self, mode: int, buffer: bytearray, iv: bytes) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _crypt(self, mode: int, ciphertext: bytes, sector: int = 0, output: bytearray | None = None) -> bytes | None:
         length = len(ciphertext)
@@ -101,16 +101,16 @@ class Plain64BE(IV):
 class EBOIV(IV):
     def __init__(self, cipher: Cipher, key: bytes, iv_options: str | None = None):
         # Implementation specific
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class ESSIV(IV):
     def __init__(self, cipher: Cipher, key: bytes, iv_options: str | None = None):
         # Implementation specific
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class Elephant(IV):
     def __init__(self, cipher: Cipher, key: bytes, iv_options: str | None = None):
         # Implementation specific
-        raise NotImplementedError()
+        raise NotImplementedError

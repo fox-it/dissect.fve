@@ -14,7 +14,7 @@ import os
 import struct
 from bisect import bisect_right
 from operator import itemgetter
-from typing import BinaryIO, Iterator
+from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
 from dissect.util.stream import AlignedStream
@@ -35,6 +35,10 @@ from dissect.fve.bde.keys import derive_recovery_key, derive_user_key, stretch
 from dissect.fve.crypto import create_cipher
 from dissect.fve.exceptions import InvalidHeaderError
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from uuid import UUID
+
 Run = tuple[int, int, int]
 
 log = logging.getLogger(__name__)
@@ -52,7 +56,7 @@ class BDE:
         for offset in self.boot_sector.information_offsets:
             try:
                 self._available_information.append(Information(self.fh, offset))
-            except InvalidHeaderError as e:
+            except InvalidHeaderError as e:  # noqa: PERF203
                 log.warning("Failed to parse BDE information at offset 0x%x", offset, exc_info=e)
 
         self._valid_information = [info for info in self._available_information if info.is_valid()]
@@ -65,13 +69,14 @@ class BDE:
         for offset in self.boot_sector.eow_offsets:
             try:
                 self._available_eow_information.append(EowInformation(self.fh, offset))
-            except InvalidHeaderError as e:
+            except InvalidHeaderError as e:  # noqa: PERF203
                 log.warning("Failed to parse BDE EOW information at offset 0x%x", offset, exc_info=e)
 
         self._valid_eow_information = [info for info in self._available_eow_information if info.is_valid()]
         if self._available_eow_information and not self._valid_eow_information:
             raise InvalidHeaderError("No valid EOW information found")
-        elif self._valid_eow_information:
+
+        if self._valid_eow_information:
             self.eow_information = self._valid_eow_information[0]
 
         self._fvek = None
@@ -82,8 +87,7 @@ class BDE:
             role=FVE_DATUM_ROLE.VOLUME_MASTER_KEY_INFO,
             type_=FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO,
         )
-        identifiers = [d.identifier for d in datums]
-        return identifiers
+        return [d.identifier for d in datums]
 
     @property
     def sector_size(self) -> int:
@@ -143,7 +147,7 @@ class BDE:
 
         fvek = fvek.unbox(key)
         if not isinstance(fvek, KeyDatum):
-            raise ValueError("Invalid unboxed FVEK")
+            raise TypeError("Invalid unboxed FVEK")
 
         self._fvek = fvek
 
@@ -229,8 +233,12 @@ class BDE:
             information_size = ~(self.sector_size - 1) & (self.sector_size + 0xFFFF)
 
         # All information offsets are reserved regions
-        for offset in self.information.information_offset:
-            regions.append((offset // self.sector_size, information_size // self.sector_size))
+        regions.extend(
+            [
+                (offset // self.sector_size, information_size // self.sector_size)
+                for offset in self.information.information_offset
+            ]
+        )
 
         if self.version >= 2:
             num_sectors = self.information.virtualized_sectors or 1
@@ -514,8 +522,9 @@ def is_bde_volume(fh: BinaryIO) -> bool:
     try:
         fh.seek(0)
         BootSector(fh)
-        return True
     except ValueError:
         return False
+    else:
+        return True
     finally:
         fh.seek(stored_position)

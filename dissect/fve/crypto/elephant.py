@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def diffuser_a_decrypt(buffer: memoryview, sector_size: int) -> None:
     a_cycles = 5
     r_a = [9, 0, 13, 0]
