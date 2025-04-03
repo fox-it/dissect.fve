@@ -25,12 +25,13 @@ from dissect.fve.bde.c_bde import (
     EOW_INFORMATION_OFFSET_GUID,
     FVE_DATUM_ROLE,
     FVE_DATUM_TYPE,
+    FVE_KEY_FLAG,
     FVE_STATE,
     INFORMATION_OFFSET_GUID,
     c_bde,
 )
 from dissect.fve.bde.eow import EowInformation
-from dissect.fve.bde.information import Dataset, Information, KeyDatum, VmkInfoDatum
+from dissect.fve.bde.information import Dataset, Information, KeyDatum, ManualKeyDatum, VmkInfoDatum
 from dissect.fve.bde.keys import derive_recovery_key, derive_user_key, stretch
 from dissect.fve.crypto import create_cipher
 from dissect.fve.exceptions import InvalidHeaderError
@@ -184,6 +185,10 @@ class BDE:
 
         decrypted_key = vmk.decrypt(startup_key.external_key())
         self.unlock(decrypted_key)
+
+    def unlock_with_raw_key(self, key: bytes) -> None:
+        """Unlock this volume with a raw FVEK key."""
+        self._fvek = ManualKeyDatum(self.information.dataset.fvek_type, FVE_KEY_FLAG.NONE, key)
 
     def _unlock_with_user_key(
         self, vmks: list[VmkInfoDatum], user_key: bytes, identifier: UUID | str | None = None

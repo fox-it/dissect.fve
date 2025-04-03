@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from binascii import crc32
+from dataclasses import dataclass
 from functools import cached_property
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO
@@ -403,6 +404,13 @@ class KeyDatum(Datum):
     @property
     def data(self) -> bytes:
         return self._data[len(KeyDatum.__struct__) :]
+
+
+@dataclass
+class ManualKeyDatum:
+    key_type: FVE_KEY_TYPE
+    key_flags: FVE_KEY_FLAG
+    data: bytes
 
 
 class UnicodeDatum(Datum):

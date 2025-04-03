@@ -65,6 +65,20 @@ def _verify_bek_crypto(test_file: BinaryIO, bek_file: BinaryIO, fvek_type: c_bde
     _verify_crypto_stream(bde_obj)
 
 
+def _verify_raw_key_crypto(test_file: BinaryIO, raw_key: bytes, fvek_type: c_bde.FVE_KEY_TYPE) -> None:
+    bde_obj = bde.BDE(test_file)
+
+    assert bde_obj.encrypted
+    assert bde_obj.information.current_state == bde_obj.information.next_state == c_bde.FVE_STATE.ENCRYPTED
+    assert bde_obj.information.dataset.fvek_type == fvek_type
+    assert not bde_obj.unlocked
+
+    bde_obj.unlock_with_raw_key(raw_key)
+    assert bde_obj.unlocked
+
+    _verify_crypto_stream(bde_obj)
+
+
 def test_bde_basic(bde_aes_128: BinaryIO) -> None:
     bde_obj = bde.BDE(bde_aes_128)
 
@@ -155,6 +169,46 @@ def test_bde_bek(test_file: str, bek_file: str, key_type: c_bde.FVE_KEY_TYPE) ->
         contextlib.contextmanager(open_file)(bek_file) as bek_fh,
     ):
         _verify_bek_crypto(fh, bek_fh, key_type)
+
+
+@pytest.mark.parametrize(
+    ("test_file", "raw_key", "key_type"),
+    [
+        (
+            "_data/bde/aes_128.bin.gz",
+            "84c3a3157e5f21dee140005220bc940e",
+            c_bde.FVE_KEY_TYPE.AES_128,
+        ),
+        (
+            "_data/bde/aes_256.bin.gz",
+            "dd3885ef9948c8dc6ad1b54a6c4a4b6fb74b44d1d9775ac7ed186c35f1b59022",
+            c_bde.FVE_KEY_TYPE.AES_256,
+        ),
+        (
+            "_data/bde/aes_128_diffuser.bin.gz",
+            "10730f695df62a49cd3aa1b1c9ae3edf2229c338a3740830e2b19d2b83f9cada268af0e0613921085edc89e1b804de354fd265acf4e5c410b47764bb9565666b",
+            c_bde.FVE_KEY_TYPE.AES_128_DIFFUSER,
+        ),
+        (
+            "_data/bde/aes_256_diffuser.bin.gz",
+            "3a600625f8fd5cc506cf8b30c8ca0600cc32f0c6b54c140789f7518c4fb5c71ba272f34f1a920d5be247298b5d233ce6199023c24d0aefec28717232f9894d1f",
+            c_bde.FVE_KEY_TYPE.AES_256_DIFFUSER,
+        ),
+        (
+            "_data/bde/aes-xts_128.bin.gz",
+            "4eb949c473f0edfc379ad041670ddb9c4da0abdb4482a2c8bb47250493aa1ed5",
+            c_bde.FVE_KEY_TYPE.AES_XTS_128,
+        ),
+        (
+            "_data/bde/aes-xts_256.bin.gz",
+            "c74002df41f5eadeee2549fc009233a2a510726ce08736aba2f84a52ac6e7bbc56b8a824a4dc26cf9c4c2926386319d17427998e045ebfdc789e328e0dc97da4",
+            c_bde.FVE_KEY_TYPE.AES_XTS_256,
+        ),
+    ],
+)
+def test_bde_raw_key(test_file: str, raw_key: str, key_type: c_bde.FVE_KEY_TYPE) -> None:
+    with contextlib.contextmanager(open_file_gz)(test_file) as fh:
+        _verify_raw_key_crypto(fh, bytes.fromhex(raw_key), key_type)
 
 
 def test_bde_vista(bde_vista: BinaryIO) -> None:
