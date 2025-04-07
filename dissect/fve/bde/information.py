@@ -314,32 +314,7 @@ class Datum:
         header = c_bde.FVE_DATUM(fh)
         fh.seek(offset)
 
-        datum_type_map = {
-            FVE_DATUM_TYPE.KEY: KeyDatum,
-            FVE_DATUM_TYPE.UNICODE: UnicodeDatum,
-            FVE_DATUM_TYPE.STRETCH_KEY: StretchKeyDatum,
-            FVE_DATUM_TYPE.USE_KEY: UseKeyDatum,
-            FVE_DATUM_TYPE.AES_CCM_ENCRYPTED_KEY: AesCcmEncryptedDatum,
-            FVE_DATUM_TYPE.TPM_ENCRYPTED_BLOB: TpmEncryptedBlobDatum,
-            FVE_DATUM_TYPE.VALIDATION_INFO: ValidationInfoDatum,
-            FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO: VmkInfoDatum,
-            FVE_DATUM_TYPE.EXTERNAL_INFO: ExternalInfoDatum,
-            FVE_DATUM_TYPE.UPDATE: UpdateDatum,
-            FVE_DATUM_TYPE.ERROR_LOG: ErrorLogDatum,
-            FVE_DATUM_TYPE.ASYMMETRIC_ENCRYPTED_KEY: AsymmetricEncryptedDatum,
-            FVE_DATUM_TYPE.EXPORTED_KEY: ExportedPublicKeyDatum,
-            FVE_DATUM_TYPE.PUBLIC_KEY_INFO: PublicKeyInfoDatum,
-            FVE_DATUM_TYPE.VIRTUALIZATION_INFO: VirtualizationInfoDatum,
-            FVE_DATUM_TYPE.SIMPLE_1: SimpleDatum,
-            FVE_DATUM_TYPE.SIMPLE_2: SimpleDatum,
-            FVE_DATUM_TYPE.CONCAT_HASH_KEY: ConcatHashKeyDatum,
-            FVE_DATUM_TYPE.SIMPLE_3: SimpleDatum,
-            FVE_DATUM_TYPE.SIMPLE_LARGE: SimpleLargeDatum,
-            FVE_DATUM_TYPE.BACKUP_INFO: BackupInfoDatum,
-        }
-        datum_type = FVE_DATUM_TYPE(header.Type)
-
-        return datum_type_map.get(datum_type, Datum)(fh)
+        return DATUM_TYPE_MAP.get(FVE_DATUM_TYPE(header.Type), Datum)(fh)
 
     @classmethod
     def from_bytes(cls, buf: bytes) -> Datum:
@@ -750,3 +725,28 @@ class AesCbc256HmacSha512EncryptedDatum(Datum):
     @property
     def data(self) -> bytes:
         return self._data[len(self.__struct__) :]
+
+
+DATUM_TYPE_MAP = {
+    FVE_DATUM_TYPE.KEY: KeyDatum,
+    FVE_DATUM_TYPE.UNICODE: UnicodeDatum,
+    FVE_DATUM_TYPE.STRETCH_KEY: StretchKeyDatum,
+    FVE_DATUM_TYPE.USE_KEY: UseKeyDatum,
+    FVE_DATUM_TYPE.AES_CCM_ENCRYPTED_KEY: AesCcmEncryptedDatum,
+    FVE_DATUM_TYPE.TPM_ENCRYPTED_BLOB: TpmEncryptedBlobDatum,
+    FVE_DATUM_TYPE.VALIDATION_INFO: ValidationInfoDatum,
+    FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO: VmkInfoDatum,
+    FVE_DATUM_TYPE.EXTERNAL_INFO: ExternalInfoDatum,
+    FVE_DATUM_TYPE.UPDATE: UpdateDatum,
+    FVE_DATUM_TYPE.ERROR_LOG: ErrorLogDatum,
+    FVE_DATUM_TYPE.ASYMMETRIC_ENCRYPTED_KEY: AsymmetricEncryptedDatum,
+    FVE_DATUM_TYPE.EXPORTED_KEY: ExportedPublicKeyDatum,
+    FVE_DATUM_TYPE.PUBLIC_KEY_INFO: PublicKeyInfoDatum,
+    FVE_DATUM_TYPE.VIRTUALIZATION_INFO: VirtualizationInfoDatum,
+    FVE_DATUM_TYPE.SIMPLE_1: SimpleDatum,
+    FVE_DATUM_TYPE.SIMPLE_2: SimpleDatum,
+    FVE_DATUM_TYPE.CONCAT_HASH_KEY: ConcatHashKeyDatum,
+    FVE_DATUM_TYPE.SIMPLE_3: SimpleDatum,
+    FVE_DATUM_TYPE.SIMPLE_LARGE: SimpleLargeDatum,
+    FVE_DATUM_TYPE.BACKUP_INFO: BackupInfoDatum,
+}

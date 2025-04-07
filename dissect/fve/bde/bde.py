@@ -79,6 +79,8 @@ class BDE:
         if self._valid_eow_information:
             self.eow_information = self._valid_eow_information[0]
 
+        self._fvek_datum = None
+        self._fvek_type = None
         self._fvek = None
 
     @property
@@ -137,7 +139,7 @@ class BDE:
         """Return whether this volume can be unlocked with a BEK file."""
         return len(list(self.information.dataset.find_external_vmk())) != 0
 
-    def unlock(self, key: bytes) -> None:
+    def unlock(self, key: bytes) -> BDE:
         """Unlock this volume with the specified encryption key."""
         self.information.check_integrity(key)
 
@@ -149,27 +151,31 @@ class BDE:
         if not isinstance(fvek, KeyDatum):
             raise TypeError("Invalid unboxed FVEK")
 
-        self._fvek = fvek
+        self._fvek_datum = fvek
+        self._fvek_type = fvek.key_type
+        self._fvek = fvek.data
 
-    def unlock_with_clear_key(self) -> None:
+        return self
+
+    def unlock_with_clear_key(self) -> BDE:
         """Unlock this volume with the clear/obfuscated key."""
         vmk = self.information.dataset.find_clear_vmk()
         if not vmk:
             raise ValueError("No clear VMK found")
 
-        self.unlock(vmk.decrypt(vmk.clear_key()))
+        return self.unlock(vmk.decrypt(vmk.clear_key()))
 
-    def unlock_with_recovery_password(self, recovery_password: str, identifier: UUID | str | None = None) -> None:
+    def unlock_with_recovery_password(self, recovery_password: str, identifier: UUID | str | None = None) -> BDE:
         """Unlock this volume with the recovery password."""
         recovery_key = derive_recovery_key(recovery_password)
-        self._unlock_with_user_key(self.information.dataset.find_recovery_vmk(), recovery_key, identifier)
+        return self._unlock_with_user_key(self.information.dataset.find_recovery_vmk(), recovery_key, identifier)
 
-    def unlock_with_passphrase(self, passphrase: str, identifier: UUID | str | None = None) -> None:
+    def unlock_with_passphrase(self, passphrase: str, identifier: UUID | str | None = None) -> BDE:
         """Unlock this volume with the user passphrase."""
         user_key = derive_user_key(passphrase)
-        self._unlock_with_user_key(self.information.dataset.find_passphrase_vmk(), user_key, identifier)
+        return self._unlock_with_user_key(self.information.dataset.find_passphrase_vmk(), user_key, identifier)
 
-    def unlock_with_bek(self, bek_fh: BinaryIO) -> None:
+    def unlock_with_bek(self, bek_fh: BinaryIO) -> BDE:
         """Unlock this volume with a BEK file."""
         bek_ds = Dataset(bek_fh)
         startup_key = bek_ds.find_startup_key()
@@ -183,11 +189,17 @@ class BDE:
             raise ValueError("No compatible VMK found")
 
         decrypted_key = vmk.decrypt(startup_key.external_key())
-        self.unlock(decrypted_key)
+        return self.unlock(decrypted_key)
+
+    def unlock_with_fvek(self, key: bytes) -> BDE:
+        """Unlock this volume with a raw FVEK key."""
+        self._fvek_type = self.information.dataset.fvek_type
+        self._fvek = key
+        return self
 
     def _unlock_with_user_key(
         self, vmks: list[VmkInfoDatum], user_key: bytes, identifier: UUID | str | None = None
-    ) -> None:
+    ) -> BDE:
         decrypted_key = None
         for vmk in vmks:
             if identifier and str(identifier) != str(vmk.identifier):
@@ -207,7 +219,7 @@ class BDE:
         else:
             raise ValueError("No compatible VMK found")
 
-        self.unlock(decrypted_key)
+        return self.unlock(decrypted_key)
 
     def open(self) -> BitlockerStream:
         """Open this volume and return a readable (decrypted) stream."""
@@ -340,8 +352,8 @@ class BitlockerStream(AlignedStream):
         if self.bde.encrypted:
             self.encrypted = True
             self.cipher = create_cipher(
-                CIPHER_MAP[bde._fvek.key_type],
-                bde._fvek.data,
+                CIPHER_MAP[bde._fvek_type],
+                bde._fvek,
                 sector_size=self.sector_size,
                 iv_sector_size=self.sector_size,
             )
