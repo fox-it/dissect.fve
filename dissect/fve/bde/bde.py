@@ -192,7 +192,7 @@ class BDE:
         decrypted_key = vmk.decrypt(startup_key.external_key())
         return self.unlock(decrypted_key)
 
-    def unlock_with_raw_key(self, key: bytes) -> BDE:
+    def unlock_with_fvek(self, key: bytes) -> BDE:
         """Unlock this volume with a raw FVEK key."""
         self._fvek_type = self.information.dataset.fvek_type
         self._fvek = key

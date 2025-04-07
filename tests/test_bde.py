@@ -73,7 +73,7 @@ def _verify_raw_key_crypto(test_file: BinaryIO, raw_key: bytes, fvek_type: c_bde
     assert bde_obj.information.dataset.fvek_type == fvek_type
     assert not bde_obj.unlocked
 
-    bde_obj.unlock_with_raw_key(raw_key)
+    bde_obj.unlock_with_fvek(raw_key)
     assert bde_obj.unlocked
 
     _verify_crypto_stream(bde_obj)
