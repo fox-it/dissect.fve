@@ -25,7 +25,6 @@ from dissect.fve.bde.c_bde import (
     EOW_INFORMATION_OFFSET_GUID,
     FVE_DATUM_ROLE,
     FVE_DATUM_TYPE,
-    FVE_KEY_FLAG,
     FVE_STATE,
     INFORMATION_OFFSET_GUID,
     c_bde,
