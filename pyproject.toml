@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     "dissect.cstruct>=4,<5",
     "dissect.util>=3,<4",
-    "pycryptodome",
+    "pycryptodome==3.22.0",
     "argon2-cffi",
 ]
 dynamic = ["version"]
