@@ -1,19 +1,8 @@
 from __future__ import annotations
 
-from Crypto.Cipher import AES
-
+# Only pycryptodome is supported right now
 from dissect.fve.crypto import _pycryptodome
 from dissect.fve.crypto.base import Cipher, Plain, Plain64, Plain64BE
-
-# Only pycryptodome is supported right now
-_pycryptodome.install()
-
-
-CIPHER_MODE_MAP = {
-    "ecb": AES.MODE_FVE_ECB,
-    "cbc": AES.MODE_FVE_CBC,
-    "xts": AES.MODE_FVE_XTS,
-}
 
 IV_MODE_MAP = {
     "plain": Plain,
@@ -45,17 +34,15 @@ def create_cipher(
     if cipher_name != "aes":
         raise ValueError("Only AES support is implemented")
 
-    mode = CIPHER_MODE_MAP.get(cipher_mode)
-    if not mode:
+    if cipher_mode not in ("ecb", "cbc", "xts"):
         raise ValueError(f"Invalid cipher mode: {cipher_name}-{cipher_mode} (from {spec})")
 
-    iv = IV_MODE_MAP.get(iv_name)
-    if not iv:
+    if (iv := IV_MODE_MAP.get(iv_name)) is None:
         raise ValueError(f"Invalid iv mode: {iv_name}:{iv_options} (from {spec})")
 
-    return AES.new(
+    return _pycryptodome.new(
         key,
-        mode,
+        cipher_mode,
         key_size=key_size,
         iv_mode=iv,
         iv_options=iv_options,
