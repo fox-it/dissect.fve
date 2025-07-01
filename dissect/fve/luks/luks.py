@@ -9,10 +9,9 @@ import io
 from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
-import argon2
 from dissect.util.stream import AlignedStream
 
-from dissect.fve.crypto import create_cipher
+from dissect.fve.crypto import argon2, create_cipher
 from dissect.fve.luks import af
 from dissect.fve.luks.c_luks import (
     LUKS2_MAGIC_1ST,
@@ -231,15 +230,7 @@ def derive_passphrase_key(passphrase: bytes, keyslot: Keyslot) -> bytes:
         return hashlib.pbkdf2_hmac(kdf.hash, passphrase, kdf.salt, kdf.iterations, keyslot.key_size)
 
     if kdf.type.startswith("argon2"):
-        return argon2.low_level.hash_secret_raw(
-            passphrase,
-            kdf.salt,
-            kdf.time,
-            kdf.memory,
-            kdf.cpus,
-            keyslot.key_size,
-            {"argon2i": argon2.low_level.Type.I, "argon2id": argon2.low_level.Type.ID}[kdf.type],
-        )
+        return argon2.hash_secret_raw(passphrase, kdf.salt, kdf.time, kdf.memory, kdf.cpus, keyslot.key_size, kdf.type)
 
     raise NotImplementedError(f"Unsupported kdf algorithm: {kdf.type}")
 
