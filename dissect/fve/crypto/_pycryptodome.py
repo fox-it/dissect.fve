@@ -5,7 +5,7 @@ import platform
 import sys
 from typing import Any, Callable
 
-from Crypto.Cipher import AES, _extra_modes
+from Crypto.Cipher import AES
 from Crypto.Util import _raw_api
 
 from dissect.fve.crypto import elephant
@@ -250,14 +250,21 @@ def _create_cipher_factory(mode: type[Cipher]) -> Callable[..., Cipher]:
     return cipher_factory
 
 
-def install() -> None:
-    """Install the cipher modes into pycryptotome."""
+_create_fve_ecb_cipher = _create_cipher_factory(EcbMode)
+_create_fve_cbc_cipher = _create_cipher_factory(CbcMode)
+_create_fve_xts_cipher = _create_cipher_factory(XtsMode)
 
-    # Only support AES for now
-    AES.MODE_FVE_ECB = 50
-    AES.MODE_FVE_CBC = 51
-    AES.MODE_FVE_XTS = 52
 
-    _extra_modes[AES.MODE_FVE_ECB] = _create_cipher_factory(EcbMode)
-    _extra_modes[AES.MODE_FVE_CBC] = _create_cipher_factory(CbcMode)
-    _extra_modes[AES.MODE_FVE_XTS] = _create_cipher_factory(XtsMode)
+def new(key: bytes, mode: int, *args, **kwargs) -> Cipher:
+    """Create a new cipher object."""
+    if mode not in ("ecb", "cbc", "xts"):
+        return AES.new(key, mode, *args, **kwargs)
+
+    if mode == "ecb":
+        return _create_fve_ecb_cipher(AES, key=key, mode=mode, **kwargs)
+    if mode == "cbc":
+        return _create_fve_cbc_cipher(AES, key=key, mode=mode, **kwargs)
+    if mode == "xts":
+        return _create_fve_xts_cipher(AES, key=key, mode=mode, **kwargs)
+
+    raise ValueError(f"Unsupported mode: {mode} (key: {key!r}, args: {args}, kwargs: {kwargs})")
