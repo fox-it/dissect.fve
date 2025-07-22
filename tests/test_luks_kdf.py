@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from dissect.fve.crypto import argon2
 from dissect.fve.luks.luks import derive_passphrase_key
 from dissect.fve.luks.metadata import Keyslot
 
@@ -25,6 +28,7 @@ def test_luks_kdf_pbkdf2() -> None:
     )
 
 
+@pytest.mark.skipif(not argon2.HAS_ARGON2, reason="Argon2 is not available, skipping")
 def test_luks_kdf_argon2i() -> None:
     keyslot = Keyslot.from_dict(
         {
@@ -47,6 +51,7 @@ def test_luks_kdf_argon2i() -> None:
     )
 
 
+@pytest.mark.skipif(not argon2.HAS_ARGON2, reason="Argon2 is not available, skipping")
 def test_luks_kdf_argon2id() -> None:
     keyslot = Keyslot.from_dict(
         {

@@ -1,0 +1,3 @@
+def hash_secret_raw(
+    secret: bytes, salt: bytes, time_cost: int, memory_cost: int, parallelism: int, hash_len: int, type: str
+) -> bytes: ...
