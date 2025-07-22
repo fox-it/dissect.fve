@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.25"
-argon2 = "0.5.3"
+argon2 = { version = "0.6.0-rc.1", features = ["parallel"] }
