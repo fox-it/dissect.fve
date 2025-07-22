@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from dissect.util.xmemoryview import xmemoryview
+
 
 def diffuser_a_decrypt(buffer: memoryview, sector_size: int) -> None:
     a_cycles = 5
     r_a = [9, 0, 13, 0]
     int_size = sector_size >> 2
 
-    buffer_i = buffer.cast("I")
+    buffer_i = xmemoryview(buffer, "<I")
 
     for _ in range(a_cycles):
         for i in range(int_size):
@@ -18,7 +20,7 @@ def diffuser_a_encrypt(buffer: memoryview, sector_size: int) -> None:
     r_a = [9, 0, 13, 0]
     int_size = sector_size >> 2
 
-    buffer_i = buffer.cast("I")
+    buffer_i = xmemoryview(buffer, "<I")
 
     for _ in range(a_cycles):
         for i in range(int_size - 1, -1, -1):
@@ -30,7 +32,7 @@ def diffuser_b_decrypt(buffer: memoryview, sector_size: int) -> None:
     r_b = [0, 10, 0, 25]
     int_size = sector_size >> 2
 
-    buffer_i = buffer.cast("I")
+    buffer_i = xmemoryview(buffer, "<I")
 
     for _ in range(b_cycles):
         for i in range(int_size):
@@ -44,7 +46,7 @@ def diffuser_b_encrypt(buffer: memoryview, sector_size: int) -> None:
     r_b = [0, 10, 0, 25]
     int_size = sector_size >> 2
 
-    buffer_i = buffer.cast("I")
+    buffer_i = xmemoryview(buffer, "<I")
 
     for _ in range(b_cycles):
         for i in range(int_size - 1, -1, -1):
