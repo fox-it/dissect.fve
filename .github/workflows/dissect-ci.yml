@@ -12,6 +12,8 @@ jobs:
   ci:
     uses: fox-it/dissect-workflow-templates/.github/workflows/dissect-ci-template.yml@main
     secrets: inherit
+    with:
+      build-native: true
 
   publish:
     if: ${{ github.ref_name == 'main' || github.ref_type == 'tag' }}
@@ -23,8 +25,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: packages
+          pattern: packages*
           path: dist/
+          merge-multiple: true
       # According to the documentation, it automatically looks inside the `dist/` folder for packages.
       - name: Publish package distributions to Pypi
         uses: pypa/gh-action-pypi-publish@release/v1
