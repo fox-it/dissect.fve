@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "dissect.cstruct>=4,<5",
-    "dissect.util>=3.22.dev8,<4",  # TODO: update on release
+    "dissect.util>=3.22,<4",
     "pycryptodome",
     "argon2-cffi",
 ]
