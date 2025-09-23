@@ -2,16 +2,9 @@ from __future__ import annotations
 
 import base64
 import json
-import sys
 from dataclasses import dataclass, field, fields
-
-if sys.version_info >= (3, 10):
-    from types import UnionType  # novermin
-else:
-    # Python 3.9
-    from typing import Union as UnionType
-
-from typing import Any, Optional, get_args, get_origin, get_type_hints
+from types import UnionType
+from typing import Any, get_args, get_origin, get_type_hints
 
 from dissect.fve.luks.c_luks import c_luks
 
@@ -45,7 +38,7 @@ class JsonItem:
     def _parse_type(type_: Any, value: str | int | dict | list) -> str | int | dict | list | bytes:
         result = None
 
-        if type_ == Optional[type_]:
+        if type_ == type_ | None:
             result = JsonItem._parse_type(get_args(type_)[0], value) if value is not None else None
         elif get_origin(type_) is UnionType:
             for atype in get_args(type_):
@@ -241,14 +234,3 @@ class Metadata(JsonItem):
         )
 
         return Metadata(config, keyslots, digests, segments, tokens)
-
-
-# Backward compatibility with Python 3.9
-if sys.version_info < (3, 10):
-    items = list(globals().values())
-    for obj in items:
-        if isinstance(obj, type) and issubclass(obj, JsonItem):
-            for k, v in obj.__annotations__.items():
-                if isinstance(v, str) and "|" in v:
-                    # Because we import Union as UnionType
-                    obj.__annotations__[k] = f"UnionType[{v.replace(' | ', ', ')}]"
