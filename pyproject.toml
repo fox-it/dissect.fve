@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dissect.fve"
 description = "A Dissect module implementing a parsers for full volume encryption implementations, currently Linux Unified Key Setup (LUKS1 and LUKS2) and Microsoft's Bitlocker Disk Encryption"
 readme = "README.md"
-requires-python = "~=3.9"
+requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE", "COPYRIGHT"]
 authors = [
@@ -47,12 +47,32 @@ dev = [
     "dissect.util>=3.22.dev,<4.0.dev",
 ]
 
+[dependency-groups]
+test = [
+    "pytest",
+]
+lint = [
+    "ruff==0.13.1",
+    "vermin",
+]
+build = [
+    "build",
+]
+debug = [
+    "ipdb",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "debug"},
+]
+
 [project.scripts]
 fve-dd = "dissect.fve.tools.dd:main"
 
 [tool.ruff]
 line-length = 120
-required-version = ">=0.12.0"
+required-version = ">=0.13.1"
 
 [tool.ruff.format]
 docstring-code-format = true

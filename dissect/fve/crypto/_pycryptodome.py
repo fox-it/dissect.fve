@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import platform
 import sys
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from Crypto.Cipher import AES
 from Crypto.Util import _raw_api
@@ -17,6 +17,10 @@ if platform.python_implementation() == "CPython":
 else:
     # On PyPy the opposite is true, and also just use this as the default fallback
     from Crypto.Util.strxor import strxor as xor
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 POINTER_SIZE = 8 if sys.maxsize > 2**32 else 4
 
