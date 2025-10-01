@@ -41,7 +41,7 @@ fn hash_secret_raw(
         )?,
     )
     .hash_password_into(&secret, &salt, &mut output)
-    .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>("Hashing failed"))?;
+    .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Hashing failed: {e}")))?;
 
     Ok(PyBytes::new(py, &output).into())
 }
