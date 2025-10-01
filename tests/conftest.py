@@ -10,6 +10,12 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--force-native", action="store_true", default=False, help="run native tests, not allowing fallbacks"
+    )
+
+
 @pytest.fixture
 def bde_aes_128() -> Iterator[BinaryIO]:
     yield from open_file_gz("_data/bde/aes_128.bin.gz")

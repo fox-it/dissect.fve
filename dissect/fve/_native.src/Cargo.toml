@@ -1,0 +1,12 @@
+[package]
+name = "_native"
+version = "0.0.0-git"
+edition = "2021"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.25"
+argon2 = { version = "0.6.0-rc.1", features = ["parallel"] }

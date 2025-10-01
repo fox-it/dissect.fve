@@ -1,6 +1,7 @@
 [build-system]
 requires = ["setuptools>=77.0.0", "setuptools_scm[toml]>=6.4.0"]
-build-backend = "setuptools.build_meta"
+backend-path = ["dissect/fve"]
+build-backend = "_build"
 
 [project]
 name = "dissect.fve"
@@ -28,7 +29,6 @@ dependencies = [
     "dissect.cstruct>=4,<5",
     "dissect.util>=3.22,<4",
     "pycryptodome",
-    "argon2-cffi",
 ]
 dynamic = ["version"]
 
@@ -124,4 +124,13 @@ known-third-party = ["dissect"]
 [tool.setuptools.packages.find]
 include = ["dissect.*"]
 
+[tool.setuptools.exclude-package-data]
+"*" = ["_native.src/*"]
+
 [tool.setuptools_scm]
+
+[[tool.setuptools-rust.ext-modules]]
+target = "dissect.fve._native"
+path = "dissect/fve/_native.src/Cargo.toml"
+features = ["pyo3/extension-module"]
+strip = "All"
