@@ -21,7 +21,13 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, cipher_type:
 
     assert not luks_obj.unlocked
     assert luks_obj.keyslots
-    luks_obj.unlock_with_passphrase(passphrase)
+
+    try:
+        luks_obj.unlock_with_passphrase(passphrase)
+    except ValueError as e:
+        if "Hashing failed: out of memory" in str(e):
+            pytest.skip("Argon2 failed due to insufficient memory, skipping")
+        raise
 
     assert luks_obj.find_segment(luks_obj._active_keyslot_id).encryption == cipher_type
     _verify_crypto_stream(luks_obj)

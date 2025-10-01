@@ -46,9 +46,14 @@ def test_luks_kdf_argon2i() -> None:
         }
     )
 
-    assert derive_passphrase_key(b"password", keyslot) == bytes.fromhex(
-        "37f6085467d330749f59ea348491908a4faddabcb67523efc649419ecb52bd94"
-    )
+    try:
+        assert derive_passphrase_key(b"password", keyslot) == bytes.fromhex(
+            "37f6085467d330749f59ea348491908a4faddabcb67523efc649419ecb52bd94"
+        )
+    except ValueError as e:
+        if "Hashing failed: out of memory" in str(e):
+            pytest.skip("Argon2 failed due to insufficient memory, skipping")
+        raise
 
 
 @pytest.mark.skipif(not argon2.HAS_ARGON2, reason="Argon2 is not available, skipping")
@@ -69,6 +74,11 @@ def test_luks_kdf_argon2id() -> None:
         }
     )
 
-    assert derive_passphrase_key(b"password", keyslot) == bytes.fromhex(
-        "15b7b31551e6df90e6dbc58bb5dbc5f82efa8f36fdab9422f8a9bdfa72a8af85"
-    )
+    try:
+        assert derive_passphrase_key(b"password", keyslot) == bytes.fromhex(
+            "15b7b31551e6df90e6dbc58bb5dbc5f82efa8f36fdab9422f8a9bdfa72a8af85"
+        )
+    except ValueError as e:
+        if "Hashing failed: out of memory" in str(e):
+            pytest.skip("Argon2 failed due to insufficient memory, skipping")
+        raise
