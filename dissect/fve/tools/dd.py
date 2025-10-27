@@ -10,8 +10,8 @@ from typing import BinaryIO
 from dissect.target import container, volume
 
 from dissect.fve.bde import BDE, is_bde_volume
+from dissect.fve.crypto.dmcrypt import CryptStream
 from dissect.fve.luks import LUKS, is_luks_volume
-from dissect.fve.luks.luks import CryptStream
 
 try:
     from rich.progress import (

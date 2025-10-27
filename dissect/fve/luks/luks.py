@@ -1,17 +1,11 @@
-# References:
-# - https://gitlab.com/cryptsetup/cryptsetup
-# - https://gitlab.com/cryptsetup/cryptsetup/-/blob/main/docs/on-disk-format-luks2.pdf
-
 from __future__ import annotations
 
 import hashlib
-import io
 from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
-from dissect.util.stream import AlignedStream
-
 from dissect.fve.crypto import argon2, create_cipher
+from dissect.fve.crypto.dmcrypt import CryptStream
 from dissect.fve.luks import af
 from dissect.fve.luks.c_luks import (
     LUKS2_MAGIC_1ST,
@@ -26,7 +20,12 @@ if TYPE_CHECKING:
 
 
 class LUKS:
-    """LUKS disk encryption."""
+    """LUKS disk encryption.
+
+    References:
+        - https://gitlab.com/cryptsetup/cryptsetup
+        - https://gitlab.com/cryptsetup/cryptsetup/-/blob/main/docs/on-disk-format-luks2.pdf
+    """
 
     def __init__(self, fh: BinaryIO):
         self.fh = fh
@@ -233,51 +232,6 @@ def derive_passphrase_key(passphrase: bytes, keyslot: Keyslot) -> bytes:
         return argon2.hash_secret_raw(passphrase, kdf.salt, kdf.time, kdf.memory, kdf.cpus, keyslot.key_size, kdf.type)
 
     raise NotImplementedError(f"Unsupported kdf algorithm: {kdf.type}")
-
-
-class CryptStream(AlignedStream):
-    """Transparently decrypting stream.
-
-    Technically this is dm-crypt territory, but it's more practical to place it in the LUKS namespace.
-
-    Args:
-        fh: The original file-like object, usually the encrypted disk.
-        cipher: The cipher name/specification.
-        key: The encryption key.
-        key_size: Optional key size hint.
-        offset: Optional base offset to the encrypted region. Segment offset in LUKS.
-        size: Optional size hint. If ``None`` or ``"dynamic"``, determine the size by seeking to the end of ``fh``.
-        iv_tweak: Optional IV tweak, or offset.
-        sector_size: Optional sector size. Defaults to 512.
-    """
-
-    def __init__(
-        self,
-        fh: BinaryIO,
-        cipher: str,
-        key: bytes,
-        key_size: int | None = None,
-        offset: int = 0,
-        size: int | str | None = None,
-        iv_tweak: int = 0,
-        sector_size: int = 512,
-    ):
-        self.fh = fh
-        self.cipher = create_cipher(cipher, key, key_size or len(key) * 8, sector_size, 512)
-        self.offset = offset
-        self.iv_tweak = iv_tweak
-        self.sector_size = sector_size
-
-        if size in (None, "dynamic"):
-            size = fh.seek(0, io.SEEK_END) - offset
-
-        super().__init__(size)
-
-    def _read(self, offset: int, length: int) -> bytes:
-        self.fh.seek(self.offset + offset)
-        buf = bytearray(self.fh.read(length))
-        self.cipher.decrypt(buf, (offset // 512) + self.iv_tweak, buf)
-        return bytes(buf)
 
 
 def find_luks_headers(fh: BinaryIO) -> tuple[int | None, int | None, int | None]:
