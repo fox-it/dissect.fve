@@ -31,9 +31,9 @@ from dissect.fve.bde.c_bde import (
 )
 from dissect.fve.bde.eow import EowInformation
 from dissect.fve.bde.information import Dataset, Information, KeyDatum, VmkInfoDatum
-from dissect.fve.bde.keys import derive_recovery_key, derive_user_key, stretch
+from dissect.fve.bde.key import derive_recovery_key, derive_user_key, stretch
 from dissect.fve.crypto import create_cipher
-from dissect.fve.exceptions import InvalidHeaderError
+from dissect.fve.exception import InvalidHeaderError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -159,8 +159,7 @@ class BDE:
 
     def unlock_with_clear_key(self) -> BDE:
         """Unlock this volume with the clear/obfuscated key."""
-        vmk = self.information.dataset.find_clear_vmk()
-        if not vmk:
+        if not (vmk := self.information.dataset.find_clear_vmk()):
             raise ValueError("No clear VMK found")
 
         return self.unlock(vmk.decrypt(vmk.clear_key()))
@@ -168,25 +167,31 @@ class BDE:
     def unlock_with_recovery_password(self, recovery_password: str, identifier: UUID | str | None = None) -> BDE:
         """Unlock this volume with the recovery password."""
         recovery_key = derive_recovery_key(recovery_password)
-        return self._unlock_with_user_key(self.information.dataset.find_recovery_vmk(), recovery_key, identifier)
+        try:
+            return self._unlock_with_user_key(self.information.dataset.find_recovery_vmk(), recovery_key, identifier)
+        except ValueError as e:
+            raise ValueError("Unable to unlock with given recovery password") from e
 
     def unlock_with_passphrase(self, passphrase: str, identifier: UUID | str | None = None) -> BDE:
         """Unlock this volume with the user passphrase."""
         user_key = derive_user_key(passphrase)
-        return self._unlock_with_user_key(self.information.dataset.find_passphrase_vmk(), user_key, identifier)
+        try:
+            return self._unlock_with_user_key(self.information.dataset.find_passphrase_vmk(), user_key, identifier)
+        except ValueError as e:
+            raise ValueError("Unable to unlock with given passphrase") from e
 
     def unlock_with_bek(self, bek_fh: BinaryIO) -> BDE:
         """Unlock this volume with a BEK file."""
         bek_ds = Dataset(bek_fh)
         startup_key = bek_ds.find_startup_key()
         if not startup_key:
-            raise ValueError("No startup key found")
+            raise ValueError("Unable to unlock with BEK, no startup key found")
 
         for vmk in self.information.dataset.find_external_vmk():
             if vmk.identifier == startup_key.identifier:
                 break
         else:
-            raise ValueError("No compatible VMK found")
+            raise ValueError("Unable to unlock with BEK, no matching VMK found")
 
         decrypted_key = vmk.decrypt(startup_key.external_key())
         return self.unlock(decrypted_key)
@@ -217,7 +222,7 @@ class BDE:
             except ValueError:
                 continue
         else:
-            raise ValueError("No compatible VMK found")
+            raise ValueError("No compatible VMK found, incorrect key or identifier")
 
         return self.unlock(decrypted_key)
 

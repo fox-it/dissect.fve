@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from dissect.fve.crypto import create_cipher, elephant, parse_cipher_spec
+from dissect.fve.crypto import create_cipher, parse_cipher_spec
 
 
 @pytest.mark.parametrize(
@@ -199,32 +199,6 @@ def test_crypto_ciphers(cipher_spec: str, key: str, buf: str, sector: int, expec
 
     cipher = create_cipher(cipher_spec, bytes.fromhex(key))
     assert cipher.encrypt(out, sector) == buf
-
-
-def test_crypto_elephant_diffuser_a() -> None:
-    buffer = bytearray(b"a" * 512)
-    view = memoryview(buffer)
-
-    elephant.diffuser_a_encrypt(view, 512)
-
-    assert hashlib.sha256(buffer).hexdigest() == "f58aa15c1219f893c4ed355d363d8f831bcc0c4a82c6bbffcca321aada9e86ec"
-
-    elephant.diffuser_a_decrypt(view, 512)
-
-    assert buffer == b"a" * 512
-
-
-def test_crypto_elephant_diffuser_b() -> None:
-    buffer = bytearray(b"a" * 512)
-    view = memoryview(buffer)
-
-    elephant.diffuser_b_encrypt(view, 512)
-
-    assert hashlib.sha256(buffer).hexdigest() == "1d5a51ae0d0b6309f1f8661376af9ebd880b1274601f6841f5aaeb5273580133"
-
-    elephant.diffuser_b_decrypt(view, 512)
-
-    assert buffer == b"a" * 512
 
 
 @pytest.mark.parametrize(

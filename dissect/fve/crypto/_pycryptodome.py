@@ -13,7 +13,7 @@ from dissect.fve.crypto.base import DECRYPT, ENCRYPT, IV, Cipher
 
 if platform.python_implementation() == "CPython":
     # On CPython, our own "pure Python" XOR is somehow faster than the one from pycryptodome
-    from dissect.fve.crypto.utils import xor
+    from dissect.fve.crypto.util import xor
 else:
     # On PyPy the opposite is true, and also just use this as the default fallback
     from Crypto.Util.strxor import strxor as xor

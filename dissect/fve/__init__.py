@@ -1,4 +1,4 @@
-from dissect.fve.exceptions import Error
+from dissect.fve.exception import Error
 
 __all__ = [
     "Error",

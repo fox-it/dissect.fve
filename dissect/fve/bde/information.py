@@ -20,7 +20,7 @@ from dissect.fve.bde.c_bde import (
     FVE_STATE,
     c_bde,
 )
-from dissect.fve.exceptions import InvalidHeaderError
+from dissect.fve.exception import InvalidHeaderError
 
 if TYPE_CHECKING:
     import datetime
