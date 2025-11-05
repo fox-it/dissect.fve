@@ -7,7 +7,7 @@ from typing import BinaryIO
 import pytest
 
 from dissect.fve.bde import bde, c_bde, is_bde_volume
-from tests._utils import open_file, open_file_gz
+from tests._util import open_file, open_file_gz
 
 
 def _verify_crypto_stream(bde_obj: bde.BDE) -> None:
@@ -271,3 +271,24 @@ def test_bde_eow_partial(bde_eow_partial: BinaryIO) -> None:
 
 def test_is_bde_volume(bde_aes_128: BinaryIO) -> None:
     assert is_bde_volume(bde_aes_128)
+
+
+def test_bde_wrong_keys() -> None:
+    """Test that wrong keys raise a sensible error message."""
+    with contextlib.contextmanager(open_file_gz)("_data/bde/aes_128.bin.gz") as fh:
+        bde_obj = bde.BDE(fh)
+
+        with pytest.raises(ValueError, match="Unable to unlock with given passphrase"):
+            bde_obj.unlock_with_passphrase("wrongpassword")
+
+        with pytest.raises(ValueError, match="Unable to unlock with given recovery password"):
+            bde_obj.unlock_with_recovery_password("000000-000000-000000-000000-000000-000000-000000-000000")
+
+    with (
+        contextlib.contextmanager(open_file_gz)("_data/bde/recovery_key.bin.gz") as fh,
+        contextlib.contextmanager(open_file)("_data/bde/startup_key.bek") as bek_fh,
+    ):
+        bde_obj = bde.BDE(fh)
+
+        with pytest.raises(ValueError, match="Unable to unlock with BEK"):
+            bde_obj.unlock_with_bek(bek_fh)

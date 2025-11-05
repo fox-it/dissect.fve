@@ -14,7 +14,7 @@ from dissect.fve.bde.c_bde import (
     EOW_SIGNATURE,
     c_bde,
 )
-from dissect.fve.exceptions import InvalidHeaderError
+from dissect.fve.exception import InvalidHeaderError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
