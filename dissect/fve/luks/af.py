@@ -7,6 +7,7 @@ from dissect.fve.crypto.util import xor
 DIGEST_SIZE = {
     "sha1": 20,
     "sha256": 32,
+    "sha512": 64,
 }
 
 
