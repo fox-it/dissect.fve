@@ -45,6 +45,12 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, cipher_type:
         pytest.param("_data/luks2/aes-xts-plain64.bin.gz", "password", "aes-xts-plain64", id="luks2-aes-xts-plain64"),
         pytest.param("_data/luks2/multiple-slots.bin.gz", "password", "aes-cbc-plain", id="luks2-multiple-slots-1"),
         pytest.param("_data/luks2/multiple-slots.bin.gz", "another", "aes-cbc-plain", id="luks2-multiple-slots-2"),
+        pytest.param(
+            "_data/luks2/aes-ecb-binary-passphrase.bin.gz",
+            b"\x00\x01\x02\x03KUSJESVANSRT\x03\x02\x01\x00",
+            "aes-cbc-plain",
+            id="luks2-aes-cbc-plain",
+        ),
     ],
 )
 def test_luks(test_file: str, password: str, cipher: str, request: pytest.FixtureRequest) -> None:
