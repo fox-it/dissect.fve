@@ -5,7 +5,6 @@ from typing import BinaryIO
 
 import pytest
 
-from dissect.fve.crypto import argon2
 from dissect.fve.luks.luks import LUKS, derive_passphrase_key
 from dissect.fve.luks.metadata import Keyslot
 from tests._util import open_file_gz
@@ -49,24 +48,11 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, cipher_type:
             "_data/luks2/aes-ecb-binary-passphrase.bin.gz",
             b"\x00\x01\x02\x03KUSJESVANSRT\x03\x02\x01\x00",
             "aes-cbc-plain",
-            id="luks2-aes-cbc-plain",
+            id="luks2-aes-cbc-plain-binary-passphrase",
         ),
     ],
 )
 def test_luks(test_file: str, password: str, cipher: str, request: pytest.FixtureRequest) -> None:
-    if (
-        request.node.callspec.id
-        in (
-            "luks2-aes-cbc-plain",
-            "luks2-aes-cbc-essiv",
-            "luks2-aes-xts-plain64",
-            "luks2-multiple-slots-1",
-            "luks2-multiple-slots-2",
-        )
-        and not argon2.HAS_ARGON2
-    ):
-        pytest.skip("Argon2 is not available, skipping")
-
     with contextlib.contextmanager(open_file_gz)(test_file) as fh:
         _verify_passphrase_crypto(fh, password, cipher)
 
@@ -92,7 +78,6 @@ def test_luks_kdf_pbkdf2() -> None:
     )
 
 
-@pytest.mark.skipif(not argon2.HAS_ARGON2, reason="Argon2 is not available, skipping")
 def test_luks_kdf_argon2i() -> None:
     keyslot = Keyslot.from_dict(
         {
@@ -120,7 +105,6 @@ def test_luks_kdf_argon2i() -> None:
         raise
 
 
-@pytest.mark.skipif(not argon2.HAS_ARGON2, reason="Argon2 is not available, skipping")
 def test_luks_kdf_argon2id() -> None:
     keyslot = Keyslot.from_dict(
         {
