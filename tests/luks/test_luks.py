@@ -49,7 +49,7 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, cipher_type:
             "_data/luks2/aes-ecb-binary-passphrase.bin.gz",
             b"\x00\x01\x02\x03KUSJESVANSRT\x03\x02\x01\x00",
             "aes-cbc-plain",
-            id="luks2-aes-cbc-plain",
+            id="luks2-aes-cbc-plain-binary-passphrase",
         ),
     ],
 )
