@@ -112,9 +112,12 @@ class LUKS:
         fh.seek(offset)
         self._unlock_passphrase(fh.read(size), keyslot)
 
-    def unlock_with_passphrase(self, passphrase: str, keyslot: int | None = None) -> None:
+    def unlock_with_passphrase(self, passphrase: str | bytes, keyslot: int | None = None) -> None:
         """Unlock this volume with a passphrase and optional keyslot hint."""
-        self._unlock_passphrase(passphrase.encode(), keyslot)
+        if isinstance(passphrase, str):
+            self._unlock_passphrase(passphrase.encode(), keyslot)
+        else:
+            self._unlock_passphrase(passphrase, keyslot)
 
     def _unlock_passphrase(self, passphrase: bytes, keyslot: int | None = None) -> None:
         """Unlock this volume with a passphrase and optional keyslot hint."""
