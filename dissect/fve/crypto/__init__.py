@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 # Only pycryptodome is supported right now
 from dissect.fve.crypto import _pycryptodome
-from dissect.fve.crypto.base import Cipher, Plain, Plain64, Plain64BE
+from dissect.fve.crypto.base import Plain, Plain64, Plain64BE
+
+if TYPE_CHECKING:
+    from dissect.fve.crypto.base import Cipher
 
 IV_MODE_MAP = {
     "plain": Plain,

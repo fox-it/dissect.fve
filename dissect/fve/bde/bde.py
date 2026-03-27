@@ -30,7 +30,7 @@ from dissect.fve.bde.c_bde import (
     c_bde,
 )
 from dissect.fve.bde.eow import EowInformation
-from dissect.fve.bde.information import Dataset, Information, KeyDatum, VmkInfoDatum
+from dissect.fve.bde.information import Dataset, Information, KeyDatum
 from dissect.fve.bde.key import derive_recovery_key, derive_user_key, stretch
 from dissect.fve.crypto import create_cipher
 from dissect.fve.exception import InvalidHeaderError
@@ -38,6 +38,8 @@ from dissect.fve.exception import InvalidHeaderError
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from uuid import UUID
+
+    from dissect.fve.bde.information import VmkInfoDatum
 
 Run = tuple[int, int, int]
 

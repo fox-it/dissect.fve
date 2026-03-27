@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dissect.fve.luks.luks import LUKS, is_luks_volume
 
 __all__ = [
