@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 try:
     from dissect.fve import _native
 
