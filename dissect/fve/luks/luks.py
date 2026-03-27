@@ -13,10 +13,12 @@ from dissect.fve.luks.c_luks import (
     SECONDARY_HEADER_OFFSETS,
     c_luks,
 )
-from dissect.fve.luks.metadata import Digest, Keyslot, Metadata, Segment
+from dissect.fve.luks.metadata import Metadata
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from dissect.fve.luks.metadata import Digest, Keyslot, Segment
 
 
 class LUKS:
