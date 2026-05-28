@@ -5,7 +5,7 @@ build-backend = "_build"
 
 [project]
 name = "dissect.fve"
-description = "A Dissect module implementing a parsers for full volume encryption implementations, currently Linux Unified Key Setup (LUKS1 and LUKS2) and Microsoft's Bitlocker Disk Encryption"
+description = "A Dissect module implementing a parsers for full volume encryption implementations, currently Linux Unified Key Setup (LUKS1 and LUKS2), Microsoft's Bitlocker Disk Encryption (BDE) and VeraCrypt."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
@@ -133,6 +133,7 @@ strict = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/_docs/**" = ["INP001"]
+"**.pyi" = ["PYI042"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dissect.fve"]

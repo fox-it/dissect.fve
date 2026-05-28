@@ -1,6 +1,6 @@
 # dissect.fve
 
-A Dissect module implementing parsers for full volume encryption implementations, currently Linux Unified Key Setup (LUKS1 and LUKS2) and Microsoft's Bitlocker Disk Encryption.
+A Dissect module implementing parsers for full volume encryption implementations, currently Linux Unified Key Setup (LUKS1 and LUKS2), Microsoft's Bitlocker Disk Encryption (BDE) and VeraCrypt.
 For more information, please see [the documentation](https://docs.dissect.tools/en/latest/projects/dissect.fve/index.html).
 
 ## Requirements
