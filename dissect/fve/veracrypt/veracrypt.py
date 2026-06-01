@@ -10,7 +10,7 @@ from dissect.fve.veracrypt.c_veracrypt import (
     c_veracrypt,
 )
 from dissect.fve.veracrypt.crypto import CIPHERS
-from dissect.fve.veracrypt.keys import KEY_DERIVATIONS
+from dissect.fve.veracrypt.key import KEY_DERIVATIONS
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -90,7 +90,7 @@ class VeraCrypt:
     def _decrypt_header(self, keys: bytes) -> bool:
         """Decrypt the VeraCrypt header using any of the available :class:`Cipher` implementations."""
         for Cipher in CIPHERS:
-            cipher = Cipher(keys, BytesIO(self.header_ciphertext), 0, 512)
+            cipher = Cipher(BytesIO(self.header_ciphertext), keys, 0, 512)
             plaintext = cipher.open().read()
             header = c_veracrypt.VolumeHeader(plaintext)
 
@@ -122,7 +122,7 @@ class VeraCrypt:
         if not (Cipher := next((c for c in CIPHERS if c.__type__ == self.cipher), None)):
             raise NotImplementedError(f"Unsupported Cipher {self.cipher}")
 
-        cipher = Cipher(self.key, self.fh, offset, size)
+        cipher = Cipher(self.fh, self.key, offset, size)
         return cipher.open()
 
 

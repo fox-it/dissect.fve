@@ -8,11 +8,13 @@ from dissect.fve.crypto.dmcrypt import CryptStream
 
 
 class CryptoImplementation:
+    """Base class for VeraCrypt transparent decryption stream implementations."""
+
     __type__: str
 
-    def __init__(self, key: bytes, fh: BinaryIO, offset: int, size: int | None) -> None:
-        self.key = key
+    def __init__(self, fh: BinaryIO, key: bytes, offset: int, size: int | None) -> None:
         self.fh = fh
+        self.key = key
         self.offset = offset
         self.size = size
 

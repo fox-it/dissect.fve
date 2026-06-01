@@ -23,8 +23,9 @@ class KeyDerivation:
         self.salt = salt
 
         # If the passphrase is longer than the hash block size, create a digest.
-        if len(self.passphrase) > getattr(hashlib, self.__hash__)().block_size:
-            self.passphrase = getattr(hashlib, self.__hash__)(self.passphrase).digest()
+        if len(self.passphrase) > (hash := hashlib.new(self.__hash__)).block_size:
+            hash.update(self.passphrase)
+            self.passphrase = hash.digest()
 
     def pim(self, pim: int | None = None) -> int:
         raise NotImplementedError
