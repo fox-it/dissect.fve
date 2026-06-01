@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from Crypto.Hash import SHA256, SHA512
-from Crypto.Protocol.KDF import PBKDF2
+import hashlib
+from typing import Literal
 
 
 class KeyDerivation:
@@ -13,7 +13,7 @@ class KeyDerivation:
         - ``pkcs5->DeriveKey(headerKey, password, pim, salt);``
     """
 
-    __hash__: SHA512 | SHA256
+    __hash__: Literal["sha256", "sha512"]
 
     passphrase: bytes
     salt: bytes
@@ -23,26 +23,26 @@ class KeyDerivation:
         self.salt = salt
 
         # If the passphrase is longer than the hash block size, create a digest.
-        if len(self.passphrase) > self.__hash__.block_size:
-            self.passphrase = self.__hash__.new(self.passphrase).digest()
+        if len(self.passphrase) > getattr(hashlib, self.__hash__)().block_size:
+            self.passphrase = getattr(hashlib, self.__hash__)(self.passphrase).digest()
 
     def pim(self, pim: int | None = None) -> int:
         raise NotImplementedError
 
     def derive(self, pim: int | None = None) -> bytes:
-        return PBKDF2(
-            self.passphrase.decode("latin-1"),
-            self.salt,
-            dkLen=64,
-            count=self.pim(pim),
-            hmac_hash_module=self.__hash__,
+        return hashlib.pbkdf2_hmac(
+            hash_name=self.__hash__,
+            password=self.passphrase,
+            salt=self.salt,
+            iterations=self.pim(pim),
+            dklen=64,
         )
 
 
 class Pkcs5HmacSha512(KeyDerivation):
     """VeraCrypt PKCS5 HMAC SHA512 header key derivation."""
 
-    __hash__ = SHA512
+    __hash__ = "sha512"
 
     def pim(self, pim: int | None = None) -> int:
         return 15_000 + (pim * 1_000) if pim else 500_000
@@ -51,7 +51,7 @@ class Pkcs5HmacSha512(KeyDerivation):
 class Pkcs5HmacSha256(KeyDerivation):
     """VeraCrypt PKCS5 HMAC SHA256 header key derivation."""
 
-    __hash__ = SHA256
+    __hash__ = "sha256"
 
     def pim(self, pim: int | None = None) -> int:
         return 15_000 + (pim * 1_000) if pim else 500_000
@@ -60,7 +60,7 @@ class Pkcs5HmacSha256(KeyDerivation):
 class Pkcs5HmacSha256_Boot(KeyDerivation):
     """VeraCrypt PKCS5 HMAC SHA256 boot header key derivation."""
 
-    __hash__ = SHA256
+    __hash__ = "sha256"
 
     def pim(self, pim: int | None = None) -> int:
         return pim * 2048 if pim else 200_000

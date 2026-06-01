@@ -11,18 +11,27 @@ from tests._util import absolute_path
 
 
 @pytest.mark.parametrize(
-    ("mode", "type", "value"),
+    ("mode", "type", "value", "valid"),
     [
         pytest.param(
             "aes256-sha512",
             "unlock_with_passphrase",
             "password",
+            True,
             id="aes256-sha512-passphrase",
+        ),
+        pytest.param(
+            "aes256-sha512",
+            "unlock_with_passphrase",
+            "invalid-password",
+            False,
+            id="aes256-sha512-passphrase-invalid",
         ),
         pytest.param(
             "aes256-sha256",
             "unlock_with_passphrase",
             "password",
+            True,
             id="aes256-sha256-passphrase",
         ),
         pytest.param(
@@ -31,6 +40,7 @@ from tests._util import absolute_path
             bytes.fromhex(
                 "5c20ecc54e499c16306781f9b300df9688ecc9221d4d9cc62af91466eed82646b3f26c3d4c647438b2b6da10ad256f29de8dca90aee8224e69621c39df3d81a7"
             ),
+            True,
             id="aes256-sha512-header-key",
         ),
         pytest.param(
@@ -39,18 +49,33 @@ from tests._util import absolute_path
             bytes.fromhex(
                 "964a320efd767801d19ab7585a1f3c000f491799979f4515b1f3b6860f244b6cd4c0482d0f6c8605f129f7ca74f06e18a624ed043d474a6c0d2452d0a5181022"
             ),
+            True,
             id="aes256-sha256-header-key",
+        ),
+        pytest.param(
+            "aes256-sha256",
+            "unlock_with_header_key",
+            b"\x00" * 64,
+            False,
+            id="aes256-sha256-header-key-invalid",
         ),
     ],
 )
-def test_veracrypt_file_container(mode: str, type: str, value: str | bytes) -> None:
+def test_veracrypt_file_container(mode: str, type: str, value: str | bytes, valid: bool) -> None:
     """Test if we can decrypt a VeraCrypt 1.26.24 (amd64, Windows) file-based container."""
     file = absolute_path(f"_data/veracrypt/{mode}.hc")
     assert is_veracrypt_volume(file.open("rb"))
 
     vc = VeraCrypt(file.open("rb"))
-    getattr(vc, type)(value)
+    assert not vc.unlocked
+    assert not vc.is_system
 
+    if not valid:
+        with pytest.raises(ValueError, match=r"^Unable to decrypt using provided (passphrase|header keys)$"):
+            getattr(vc, type)(value)
+        return
+
+    getattr(vc, type)(value)
     assert vc.unlocked
     assert vc.header
     assert vc.header.magic == b"VERA"
@@ -109,9 +134,14 @@ def test_veracrypt_system_partition(mode: str, type: str, value: str) -> None:
     disk = MockDisk(stream)
     volume = MockVolume(disk)
 
-    vc = VeraCrypt(volume, is_system=True)  # type: ignore
+    vc = VeraCrypt(volume.disk, is_system=True)  # type: ignore
     getattr(vc, type)(value)
 
+    assert vc.is_system
     assert vc.unlocked
     assert vc.header
     assert vc.header.magic == b"VERA"
+    assert vc.cipher == "aes-xts-256-plain64"
+    assert vc.version == 5
+    assert vc.client_version == 267
+    assert vc.size == 0xFC4600000  # 63 GB

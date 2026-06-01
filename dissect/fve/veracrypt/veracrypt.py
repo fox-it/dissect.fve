@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import math
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO
@@ -32,20 +33,25 @@ class VeraCrypt:
     """
 
     def __init__(self, fh: BinaryIO, *, is_system: bool = False) -> None:
-        self._fh = fh
+        self.fh = fh
         self.is_system = is_system
-        self.header = None
         self.unlocked = False
+        self.header = None
+
+        self.cipher = None
+        self.size = None
+        self.version = None
+        self.client_version = None
 
         if is_system:
-            if not hasattr(fh, "disk"):
-                raise ValueError("Expecting BinaryIO 'disk' attribute on provided 'fh' when is_system is True")
-            self.fh: BinaryIO = fh.disk  # type: ignore
-        else:
-            self.fh = fh
+            self.fh.seek(TC_BOOT_VOLUME_HEADER_SECTOR_OFFSET)
+
+        self.header_salt = self.fh.read(64)
+        self.header_ciphertext = self.fh.read(512)
 
     def __repr__(self) -> str:
-        return f"<VeraCrypt fh={self.fh} is_system={self.is_system!r} unlocked={self.unlocked!r}>"
+        attrs = ("fh", "is_system", "unlocked", "size", "cipher", "version", "client_version")
+        return "<VeraCrypt " + " ".join(f"{attr}={getattr(self, attr)}" for attr in attrs) + ">"
 
     def unlock_with_passphrase(self, passphrase: str, pim: int | None = None) -> None:
         """Unlock the volume with a passphrase.
@@ -60,31 +66,10 @@ class VeraCrypt:
         KDF HMAC BLAKE2s-256, WHIRLPOOL and STREEBOG are not implemented.
         Ciphers (XTS mode) Serpent, Twofish and Camellia are not implemented.
         """
-        if self.is_system:
-            self.fh.seek(TC_BOOT_VOLUME_HEADER_SECTOR_OFFSET)
-
-        self.header_salt = self.fh.read(64)
-        header_ciphertext = self.fh.read(512)
-
         for Kdf in KEY_DERIVATIONS:
             kdf = Kdf(passphrase, self.header_salt)
             keys = kdf.derive(pim)
-
-            for Cipher in CIPHERS:
-                cipher = Cipher(keys, BytesIO(header_ciphertext), 0, 512)
-                plaintext = cipher.open().read()
-                header = c_veracrypt.VolumeHeader(plaintext)
-
-                if header.magic == b"VERA":
-                    self.header_keys = keys
-                    self.header = header
-                    self.cipher = cipher.__type__
-                    # NOTE: Could contain more keys if other cipher(s) are used.
-                    self.key = self.header.master_keys[0:64]
-                    self.unlocked = True
-                    break
-
-            if self.unlocked:
+            if self._decrypt_header(keys):
                 break
 
         if not self.unlocked:
@@ -93,16 +78,19 @@ class VeraCrypt:
     def unlock_with_header_key(self, keys: bytes) -> None:
         """Unlock the volume with a raw encryption key. Supports AES XTS encryption mode only."""
         if len(keys) not in (32, 64):
-            raise ValueError(f"Header key is of invalid length ({len(keys)})")
+            raise ValueError(f"Header key is of invalid length ({len(keys)}), expected 32 or 64 bytes")
 
-        if self.is_system:
-            self.fh.seek(TC_BOOT_VOLUME_HEADER_SECTOR_OFFSET)
+        if not self._decrypt_header(keys):
+            raise ValueError("Unable to decrypt using provided header keys")
 
-        self.header_salt = self.fh.read(64)
-        header_ciphertext = self.fh.read(512)
+    def unlock_with_keyfile(self, path: Path) -> None:
+        """Unlock the volume with a key file."""
+        raise NotImplementedError
 
+    def _decrypt_header(self, keys: bytes) -> bool:
+        """Decrypt the VeraCrypt header using any of the available :class:`Cipher` implementations."""
         for Cipher in CIPHERS:
-            cipher = Cipher(keys, BytesIO(header_ciphertext), 0, 512)
+            cipher = Cipher(keys, BytesIO(self.header_ciphertext), 0, 512)
             plaintext = cipher.open().read()
             header = c_veracrypt.VolumeHeader(plaintext)
 
@@ -110,17 +98,14 @@ class VeraCrypt:
                 self.header_keys = keys
                 self.header = header
                 self.cipher = cipher.__type__
-                # NOTE: Could contain more keys if other cipher(s) are used.
-                self.key = self.header.master_keys[0:64]
+                self.key = self.header.master_keys[0:64]  # NOTE: Could contain more keys if other cipher(s) are used.
+                self.size = header.volume_size
+                self.version = header.version
+                self.client_version = header.client_version
                 self.unlocked = True
                 break
 
-        if not self.unlocked:
-            raise ValueError("Unable to decrypt using provided header keys")
-
-    def unlock_with_keyfile(self, path: Path) -> None:
-        """Unlock the volume with a key file."""
-        raise NotImplementedError
+        return self.unlocked
 
     def open(self) -> CryptStream:
         """Open this volume and return a readable (decrypted) stream."""
@@ -154,10 +139,10 @@ def entropy(data: bytes) -> float:
 
 def is_veracrypt_volume(fh: BinaryIO) -> bool:
     """This function implements a smell test to see if the provided file handle or Volume could possibly be a VeraCrypt volume."""  # noqa: E501
+    offset = fh.tell()
+
     if not hasattr(fh, "size"):
-        offset = fh.tell()
-        fh.read()  # this is very resource intensive on large file handles
-        size = fh.tell()
+        size = fh.seek(0, io.SEEK_END)
         fh.seek(offset)
     else:
         size: int = fh.size  # type: ignore
@@ -167,7 +152,6 @@ def is_veracrypt_volume(fh: BinaryIO) -> bool:
         return False
 
     # Entropy test
-    offset = fh.tell()
     chunk = fh.read(4096)
     fh.seek(offset)
     return entropy(chunk) > 7.9
