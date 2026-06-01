@@ -50,17 +50,19 @@ class VeraCrypt:
         self.header_ciphertext = self.fh.read(512)
 
     def __repr__(self) -> str:
-        attrs = ("fh", "is_system", "unlocked", "size", "cipher", "version", "client_version")
-        return "<VeraCrypt " + " ".join(f"{attr}={getattr(self, attr)}" for attr in attrs) + ">"
+        return (
+            f"<VeraCrypt fh={self.fh} is_system={self.is_system} unlocked={self.unlocked} size={self.size} "
+            f"cipher={self.cipher} version={self.version} client_version={self.client_version}>"
+        )
 
     def unlock_with_passphrase(self, passphrase: str, pim: int | None = None) -> None:
         """Unlock the volume with a passphrase.
 
-        Supports the following PKCS5 header key derivation functions::
+        Supports the following PKCS5 header key derivation functions:
             - HMAC SHA512 (default)
             - HMAC SHA256
 
-        Supports the following encryption modes::
+        Supports the following encryption modes:
             - AES XTS (default)
 
         KDF HMAC BLAKE2s-256, WHIRLPOOL and STREEBOG are not implemented.
@@ -83,8 +85,12 @@ class VeraCrypt:
         if not self._decrypt_header(keys):
             raise ValueError("Unable to decrypt using provided header keys")
 
-    def unlock_with_keyfile(self, path: Path) -> None:
+    def unlock_with_key_file(self, path: Path) -> None:
         """Unlock the volume with a key file."""
+        raise NotImplementedError
+
+    def unlock_with_key_fh(self, fh: BinaryIO) -> None:
+        """Unlock the volume with a key file handle."""
         raise NotImplementedError
 
     def _decrypt_header(self, keys: bytes) -> bool:
@@ -138,7 +144,7 @@ def entropy(data: bytes) -> float:
 
 
 def is_veracrypt_volume(fh: BinaryIO) -> bool:
-    """This function implements a smell test to see if the provided file handle or Volume could possibly be a VeraCrypt volume."""  # noqa: E501
+    """Perform a smell test to see if the provided file-like object could be a VeraCrypt volume."""
     offset = fh.tell()
 
     if not hasattr(fh, "size"):

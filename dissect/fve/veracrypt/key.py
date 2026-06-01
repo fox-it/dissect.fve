@@ -28,9 +28,23 @@ class KeyDerivation:
             self.passphrase = hash.digest()
 
     def pim(self, pim: int | None = None) -> int:
+        """Implements Personal Iterations Multiplier (PIM).
+
+        Takes a user supplied ``pim`` integer and translates to PBKDF2 iterations count.
+
+        References:
+            - https://veracrypt.jp/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html
+        """
         raise NotImplementedError
 
     def derive(self, pim: int | None = None) -> bytes:
+        """Implements PBKDF2-HMAC header key derivation based on the provided passphrase.
+
+        Does not implement Argon2id key derivation.
+
+        References:
+            - https://veracrypt.jp/en/Header%20Key%20Derivation.html
+        """
         return hashlib.pbkdf2_hmac(
             hash_name=self.__hash__,
             password=self.passphrase,
