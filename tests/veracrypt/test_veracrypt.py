@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import BinaryIO
 
 import pytest
 from dissect.util.stream import MappingStream
@@ -84,25 +83,6 @@ def test_veracrypt_file_container(mode: str, type: str, value: str | bytes, vali
     assert b"FAT12" in stream.read(512)
 
 
-class MockDisk:
-    def __init__(self, buf: BinaryIO | MappingStream) -> None:
-        self.buf = buf
-
-    def tell(self) -> int:
-        return self.buf.tell()
-
-    def seek(self, pos: int, whence: int = 0) -> int:
-        return self.buf.seek(pos, whence)
-
-    def read(self, size: int) -> bytes:
-        return self.buf.read(size)
-
-
-class MockVolume:
-    def __init__(self, disk: MockDisk) -> None:
-        self.disk = disk
-
-
 @pytest.mark.parametrize(
     ("mode", "type", "value"),
     [
@@ -131,10 +111,7 @@ def test_veracrypt_system_partition(mode: str, type: str, value: str) -> None:
     stream.add(offset=0, size=31744, fh=BytesIO(b"\x01" * 31744))
     stream.add(offset=0x7C00, size=512 + 64, fh=BytesIO(file.read_bytes() + (64 * b"\x01")))
 
-    disk = MockDisk(stream)
-    volume = MockVolume(disk)
-
-    vc = VeraCrypt(volume.disk, is_system=True)  # type: ignore
+    vc = VeraCrypt(stream, is_system=True)  # type: ignore
     getattr(vc, type)(value)
 
     assert vc.is_system

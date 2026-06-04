@@ -118,14 +118,11 @@ class VeraCrypt:
         if not self.unlocked:
             raise ValueError("Volume is locked")
 
-        # NOTE: If we have no header, the offset is likely 0x20000 (256 * 512), but the size will be unknown.
-        # NOTE: ``header.volume_size`` and ``header.mk_scope_size`` are usually the same size.
-        offset = self.header.mk_scope_offset
-        size = self.header.mk_scope_size
-
         if not (Cipher := next((c for c in CIPHERS if c.__type__ == self.cipher), None)):
             raise NotImplementedError(f"Unsupported Cipher {self.cipher}")
 
+        offset = self.header.mk_scope_offset
+        size = self.header.mk_scope_size
         cipher = Cipher(self.fh, self.key, offset, size)
         return cipher.open()
 
