@@ -206,6 +206,16 @@ class BDE:
         decrypted_key = vmk.decrypt(startup_key.external_key())
         return self.unlock(decrypted_key)
 
+    def unlock_with_external_key(self, key: bytes) -> BDE:
+        """Unlock this volume with a raw external key."""
+        for vmk in self.information.dataset.find_external_vmk():
+            try:
+                decrypted_key = vmk.decrypt(key)
+                return self.unlock(decrypted_key)
+            except Exception:  # noqa: PERF203
+                pass
+        raise ValueError("Unable to unlock with external key")
+
     def unlock_with_fvek(self, key: bytes) -> BDE:
         """Unlock this volume with a raw FVEK key."""
         self._fvek_type = self.information.dataset.fvek_type

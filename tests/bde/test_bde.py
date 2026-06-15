@@ -65,6 +65,20 @@ def _verify_bek_crypto(test_file: BinaryIO, bek_file: BinaryIO, fvek_type: c_bde
     _verify_crypto_stream(bde_obj)
 
 
+def _verify_external_key_crypto(test_file: BinaryIO, external_key: str, fvek_type: c_bde.FVE_KEY_TYPE) -> None:
+    bde_obj = bde.BDE(test_file)
+
+    assert bde_obj.encrypted
+    assert bde_obj.information.current_state == bde_obj.information.next_state == c_bde.FVE_STATE.ENCRYPTED
+    assert bde_obj.information.dataset.fvek_type == fvek_type
+    assert not bde_obj.unlocked
+
+    bde_obj.unlock_with_external_key(bytes.fromhex(external_key))
+    assert bde_obj.unlocked
+
+    _verify_crypto_stream(bde_obj)
+
+
 def _verify_raw_key_crypto(test_file: BinaryIO, raw_key: bytes, fvek_type: c_bde.FVE_KEY_TYPE) -> None:
     bde_obj = bde.BDE(test_file)
 
@@ -169,6 +183,29 @@ def test_bde_bek(test_file: str, bek_file: str, key_type: c_bde.FVE_KEY_TYPE) ->
         contextlib.contextmanager(open_file)(bek_file) as bek_fh,
     ):
         _verify_bek_crypto(fh, bek_fh, key_type)
+
+
+@pytest.mark.parametrize(
+    ("test_file", "external_key", "key_type"),
+    [
+        (
+            "_data/bde/recovery_key.bin.gz",
+            "48a608e5cd6f2112e4b390e38a086a5ec62a1a014afaf092c9117630deecd805",
+            c_bde.FVE_KEY_TYPE.AES_XTS_128,
+        ),
+        (
+            "_data/bde/startup_key.bin.gz",
+            "7a70ca1ab390e00daf4d72c217c42bf67a39db94d76214733ae56acb1c5dd814",
+            c_bde.FVE_KEY_TYPE.AES_XTS_128,
+        ),
+    ],
+)
+def test_bde_external_key(test_file: str, external_key: str, key_type: c_bde.FVE_KEY_TYPE) -> None:
+    with (
+        contextlib.contextmanager(open_file_gz)(test_file) as fh,
+    ):
+        _verify_external_key_crypto(fh, external_key, key_type)
+
 
 
 @pytest.mark.parametrize(
