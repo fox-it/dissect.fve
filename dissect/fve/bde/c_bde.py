@@ -150,6 +150,19 @@ enum FVE_DATUM_TYPE : USHORT {
     BACKUP_INFO                 = 0x0015,
 };
 
+enum FVE_BACKUP_METHOD : USHORT {
+    ACTIVE_DIRECTORY            = 0x0001,
+    ONE_DRIVE                   = 0x0002,
+    UNKNOWN_3                   = 0x0003,
+    AZURE_ACTIVE_DIRECTORY      = 0x0004,
+    UNKNOWN_5                   = 0x0005,
+    UNKNOWN_6                   = 0x0006,
+    UNKNOWN_7                   = 0x0007,
+    FILE                        = 0x0008,
+    UNKNOWN_9                   = 0x0009,
+    PRINTED                     = 0x0010,
+};
+
 typedef struct _FVE_INFORMATION {
     CHAR        Signature[8];
     USHORT      HeaderSize;
@@ -174,7 +187,7 @@ typedef struct _FVE_DATASET {
     CHAR        Identification[16];
     ULONG       NonceCounter;
     USHORT      FvekType;
-    USHORT      _Unknown;
+    USHORT      FvekPrefType;
     ULONG64     CreationTime;
 } FVE_DATASET;
 
@@ -223,6 +236,7 @@ typedef struct _FVE_DATUM_STRETCH_KEY {
 } FVE_DATUM_STRETCH_KEY;
 
 typedef struct _FVE_DATUM_USE_KEY {
+    _FVE_DATUM  h;
     USHORT      KeyType;
     USHORT      KeyFlags;
 } FVE_DATUM_USE_KEY;
@@ -238,14 +252,15 @@ typedef struct _FVE_DATUM_AESCCM_ENC {
     // CHAR        Data[];
 } FVE_DATUM_AESCCM_ENC;
 
-typedef struct _FVE_DATUM_TPM_ENC_BLOB {
-    ULONG       PcrBitmap;
-    // CHAR        Data[];
-} FVE_DATUM_TPM_ENC_BLOB;
+// typedef struct _FVE_DATUM_TPM_ENC_BLOB {
+//     ULONG       PcrBitmap;
+//     // CHAR        Data[];
+// } FVE_DATUM_TPM_ENC_BLOB;
 
 typedef struct _FVE_DATUM_VALIDATION_ENTRY {
-    ULONG       _Unknown1;
-    ULONG       _Unknown2;
+    USHORT      EntryType;
+    USHORT      EntryPolicy;
+    ULONG       BcdType;
     CHAR        Hash[32];
 } FVE_DATUM_VALIDATION_ENTRY;
 
@@ -256,7 +271,7 @@ typedef struct _FVE_DATUM_VALIDATION_INFO {
 typedef struct _FVE_DATUM_VMK_INFO {
     CHAR        Identifier[16];
     ULONG64     DateTime;
-    USHORT      _Unknown1;
+    USHORT      VmkHints;
     USHORT      Priority;
 } FVE_DATUM_VMK_INFO;
 
@@ -266,23 +281,28 @@ typedef struct _FVE_DATUM_EXTERNAL_INFO {
 } FVE_DATUM_EXTERNAL_INFO;
 
 typedef struct _FVE_DATUM_UPDATE {
-    // Unknown
+    ULONG       UpdateFlags;
+    CHAR        RmwSignature[32];
 } FVE_DATUM_UPDATE;
 
 typedef struct _FVE_DATUM_ERROR_LOG {
-    // Unknown
+    ULONG       ErrorCode;
+    LONG        Status;
+    CHAR        VolumeId[16];
+    CHAR        OptionalId[16];
+    ULONG       Flags;
 } FVE_DATUM_ERROR_LOG;
 
 typedef struct _FVE_DATUM_ASYM_ENC_BLOB {
-    // CHAR        Data[];
+    // CHAR        EncryptedData[1];
 } FVE_DATUM_ASYM_ENC_BLOB;
 
 typedef struct _FVE_DATUM_EXPORTED_PUBLIC_KEY {
-    // CHAR        Data[];
+    // CHAR        KeyData[1];
 } FVE_DATUM_EXPORTED_PUBLIC_KEY;
 
 typedef struct _FVE_DATUM_PUBLIC_KEY_INFO {
-    // CHAR        Data[];
+    // CHAR        Data[1];
 } FVE_DATUM_PUBLIC_KEY_INFO;
 
 typedef struct _FVE_DATUM_VIRTUALIZATION_INFO {
@@ -291,11 +311,14 @@ typedef struct _FVE_DATUM_VIRTUALIZATION_INFO {
 } FVE_DATUM_VIRTUALIZATION_INFO;
 
 typedef struct _FVE_DATUM_CONCAT_HASH_KEY {
-    // Unknown
+    CHAR        ConcatHashBuffer[20];
 } FVE_DATUM_CONCAT_HASH_KEY;
 
 typedef struct _FVE_DATUM_BACKUP_INFO {
-    // Unknown
+    ULONG64             CreateDateTime;
+    ULONG64             BackupDateTime;
+    FVE_BACKUP_METHOD   Type;
+    USHORT              Flags;
 } FVE_DATUM_BACKUP_INFO;
 
 typedef struct _FVE_DATUM_AESCBC256_HMAC_SHA512_ENC {
@@ -304,6 +327,86 @@ typedef struct _FVE_DATUM_AESCBC256_HMAC_SHA512_ENC {
     // CHAR        Data[];
 } FVE_DATUM_AESCBC256_HMAC_SHA512_ENC;
 
+/* ======== Extended Information ======== */
+
+enum FVE_ARCHITECTURE {
+    FVE_ARCH_UNKNOWN            = 0,
+    FVE_ARCH_X86                = 1,
+    FVE_ARCH_X64                = 2,
+    FVE_ARCH_ARM                = 3,
+    FVE_ARCH_ARM64              = 4,
+};
+
+typedef struct _FVE_EXTENDED_INFORMATION_V1 {
+    USHORT      StructureVersion;
+    USHORT      StructureSize;
+    ULONG       WipeFilesMax;
+    ULONG64     FveFlags;
+} FVE_EXTENDED_INFORMATION_V1;
+
+typedef struct _FVE_EXTENDED_INFORMATION_V2 {
+    USHORT      StructureVersion;
+    USHORT      StructureSize;
+    ULONG       WipeFilesMax;
+    ULONG64     FveFlags;
+    ULONG64     ConvLogOffset;
+    ULONG       ConvLogSize;
+    ULONG       OriginalSectorSize;
+} FVE_EXTENDED_INFORMATION_V2;
+
+typedef struct _FVE_EXTENDED_INFORMATION_V3 {
+    USHORT      StructureVersion;
+    USHORT      StructureSize;
+    ULONG       WipeFilesMax;
+    ULONG64     FveFlags;
+    ULONG64     ConvLogOffset;
+    ULONG       ConvLogSize;
+    ULONG       OriginalSectorSize;
+    ULONG       OriginalNativeSectorSize;
+} FVE_EXTENDED_INFORMATION_V3;
+
+typedef struct _FVE_EXTENDED_INFORMATION_V4 {
+    USHORT      StructureVersion;
+    USHORT      StructureSize;
+    ULONG       WipeFilesMax;
+    ULONG64     FveFlags;
+    ULONG64     ConvLogOffset;
+    ULONG       ConvLogSize;
+    ULONG       OriginalSectorSize;
+    ULONG       OriginalNativeSectorSize;
+    ULONG       InitOSMajorVersion;
+    ULONG       InitOSMinorVersion;
+    ULONG       InitOSBuildNumber;
+    ULONG       InitOSPlatformId;
+    USHORT      InitOSServicePackMajor;
+    USHORT      InitOSServicePackMinor;
+    USHORT      InitOSSuiteMask;
+    UCHAR       InitOSProductType;
+    UCHAR       InitOSArchitecture;
+} FVE_EXTENDED_INFORMATION_V4;
+
+typedef struct _FVE_EXTENDED_INFORMATION_V5 {
+    USHORT      StructureVersion;
+    USHORT      StructureSize;
+    ULONG       WipeFilesMax;
+    ULONG64     FveFlags;
+    ULONG64     ConvLogOffset;
+    ULONG       ConvLogSize;
+    ULONG       OriginalSectorSize;
+    ULONG       OriginalNativeSectorSize;
+    ULONG       InitOSMajorVersion;
+    ULONG       InitOSMinorVersion;
+    ULONG       InitOSBuildNumber;
+    ULONG       InitOSPlatformId;
+    USHORT      InitOSServicePackMajor;
+    USHORT      InitOSServicePackMinor;
+    USHORT      InitOSSuiteMask;
+    UCHAR       InitOSProductType;
+    UCHAR       InitOSArchitecture;
+    ULONG64     IceVerifyOffset;
+    ULONG64     IceVerifySize;
+} FVE_EXTENDED_INFORMATION_V5;
+
 /* ======== EOW structures ======== */
 
 typedef struct _FVE_EOW_INFORMATION {
@@ -311,10 +414,10 @@ typedef struct _FVE_EOW_INFORMATION {
     USHORT      HeaderSize;
     USHORT      Size;
     ULONG       SectorSize;
-    ULONG       _Unknown1;
+    ULONG       AtomicAlignment;
     ULONG       ChunkSize;
     ULONG       ConvLogSize;
-    ULONG       _Unknown2;
+    ULONG       ConvLogRecordSize;
     ULONG       RegionCount;
     ULONG       Crc32;
     ULONG64     EowOffset[2];
@@ -325,7 +428,7 @@ typedef struct _FVE_EOW_BITMAP {
     CHAR        HeaderSignature[10];
     USHORT      HeaderSize;
     ULONG       Size;
-    ULONG       _Unknown1;
+    ULONG       Index;
     ULONG64     RegionOffset;
     ULONG64     RegionSize;
     ULONG64     ConvLogOffset;
@@ -342,8 +445,34 @@ typedef struct _FVE_EOW_BITMAP_RECORD {
     ULONG64     SequenceNumber;
     ULONG       Flags;
     ULONG       Crc32;
-    // ULONG       Bitmap[];
+    // ULONG       Bitmap[1];
 } FVE_EOW_BITMAP_RECORD;
+
+/* ======== Conversion log structures ======== */
+
+typedef struct _FVE_CONVLOG_HDR {
+    CHAR        Magic[8];
+    USHORT      StructureSize;
+    USHORT      StructureVersion;
+    USHORT      FvePersistState;
+    ULONG       SectorSize;
+    ULONG64     VolumeSize;
+    ULONG       ConvBlockSize;
+    ULONG       LogRecordSize;
+    ULONG       LogFactor;
+    ULONG       LogRecordCount;
+    ULONG64     Watermark;
+} FVE_CONVLOG_HDR;
+
+typedef struct _FVE_CONVLOG_RECORD_HDR {
+    USHORT      StructureSize;
+    USHORT      StructureVersion;
+    ULONG64     Lsn;
+    ULONG64     Watermark;
+    ULONG       RecordBodySize;
+    ULONG       RecordBodyChecksum;
+    ULONG       HeaderChecksum;
+} FVE_CONVLOG_RECORD_HDR;
 """
 
 c_bde = cstruct().load(bde_def)

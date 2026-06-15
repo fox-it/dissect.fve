@@ -15,7 +15,6 @@ import struct
 from bisect import bisect_right
 from operator import itemgetter
 from typing import TYPE_CHECKING, BinaryIO
-from uuid import UUID
 
 from dissect.util.stream import AlignedStream
 
@@ -39,6 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from uuid import UUID
 
+    from dissect.fve.bde.c_bde import FVE_KEY_PROTECTOR
     from dissect.fve.bde.information import VmkInfoDatum
 
 Run = tuple[int, int, int]
@@ -92,6 +92,14 @@ class BDE:
             type_=FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO,
         )
         return [d.identifier for d in datums]
+
+    @property
+    def vmk_types(self) -> list[FVE_KEY_PROTECTOR]:
+        datums = self.information.dataset.find_datum(
+            role=FVE_DATUM_ROLE.VOLUME_MASTER_KEY_INFO,
+            type_=FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO,
+        )
+        return [d.priority for d in datums]
 
     @property
     def sector_size(self) -> int:
