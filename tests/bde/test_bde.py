@@ -207,7 +207,6 @@ def test_bde_external_key(test_file: str, external_key: str, key_type: c_bde.FVE
         _verify_external_key_crypto(fh, external_key, key_type)
 
 
-
 @pytest.mark.parametrize(
     ("test_file", "raw_key", "key_type"),
     [
