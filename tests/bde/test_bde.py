@@ -244,8 +244,19 @@ def test_bde_external_key(test_file: str, external_key: str, key_type: c_bde.FVE
     ],
 )
 def test_bde_raw_key(test_file: str, raw_key: str, key_type: c_bde.FVE_KEY_TYPE) -> None:
+    """Test BDE unlocking using a FVEK key."""
+    key = bytes.fromhex(raw_key)
+
+    # Test if unlocking with valid FVEK works
     with contextlib.contextmanager(open_file_gz)(test_file) as fh:
-        _verify_raw_key_crypto(fh, bytes.fromhex(raw_key), key_type)
+        _verify_raw_key_crypto(fh, key, key_type)
+
+    # Test if unlocking with invalid FVEK fails
+    with (
+        contextlib.contextmanager(open_file_gz)(test_file) as fh,
+        pytest.raises(ValueError, match="Unable to unlock with FVEK, no plaintext filesystem found"),
+    ):
+        _verify_raw_key_crypto(fh, len(key) * b"\x00", key_type)
 
 
 def test_bde_vista(bde_vista: BinaryIO) -> None:

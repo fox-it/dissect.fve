@@ -220,7 +220,23 @@ class BDE:
         """Unlock this volume with a raw FVEK key."""
         self._fvek_type = self.information.dataset.fvek_type
         self._fvek = key
-        return self
+
+        magics = (
+            (0x03, b"NTFS"),
+            (0x36, b"FAT16"),
+            (0x52, b"FAT32"),
+            (0x03, b"EXFAT"),
+            (0x03, b"ReFS"),
+        )
+        buf = io.BytesIO(self.open().read(512))
+        for offset, magic in magics:
+            buf.seek(offset)
+            if buf.read(len(magic)) == magic:
+                return self
+
+        self._fvek = None
+        self._fvek_type = None
+        raise ValueError("Unable to unlock with FVEK, no plaintext filesystem found")
 
     def _unlock_with_user_key(
         self, vmks: list[VmkInfoDatum], user_key: bytes, identifier: UUID | str | None = None
