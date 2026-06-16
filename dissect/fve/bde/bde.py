@@ -228,11 +228,11 @@ class BDE:
             (0x03, b"EXFAT"),
             (0x03, b"ReFS"),
         )
-        buf = io.BytesIO(self.open().read(512))
-        for offset, magic in magics:
-            buf.seek(offset)
-            if buf.read(len(magic)) == magic:
-                return self
+        with self.open() as fh:
+            buf = fh.read(512)
+            for offset, magic in magics:
+                if buf[offset : offset + len(magic)] == magic:
+                    return self
 
         self._fvek = None
         self._fvek_type = None

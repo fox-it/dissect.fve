@@ -86,7 +86,7 @@ class EowBitmap:
 
     def __repr__(self) -> str:
         return (
-            f"<EowBitmap index={self.index} region_offset=0x{self.region_offset:x} region_size=0x{self.region_size:x}>"
+            f"<EowBitmap index={self.index} region_offset={self.region_offset:#x} region_size={self.region_size:#x}>"
         )
 
     def is_valid(self) -> bool:
@@ -165,8 +165,8 @@ class EowBitmapRecord:
 
     def __repr__(self) -> str:
         return (
-            f"<EowBitmapRecord sequence_number={self.sequence_number} bitmap_size=0x{self.bitmap_size:x}"
-            f" flags=0x{self.flags:x}>"
+            f"<EowBitmapRecord sequence_number={self.sequence_number} bitmap_size={self.bitmap_size:#x}"
+            f" flags={self.flags:#x}>"
         )
 
     def is_valid(self) -> bool:
