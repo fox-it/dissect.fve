@@ -85,9 +85,7 @@ class EowBitmap:
         self._record_data = fh.read(self.header.Size - self.header.RecordOffset[0])
 
     def __repr__(self) -> str:
-        return (
-            f"<EowBitmap index={self.index} region_offset={self.region_offset:#x} region_size={self.region_size:#x}>"
-        )
+        return f"<EowBitmap index={self.index} region_offset={self.region_offset:#x} region_size={self.region_size:#x}>"
 
     def is_valid(self) -> bool:
         return self._valid_checksum
