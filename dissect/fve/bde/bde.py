@@ -15,7 +15,6 @@ import struct
 from bisect import bisect_right
 from operator import itemgetter
 from typing import TYPE_CHECKING, BinaryIO
-from uuid import UUID
 
 from dissect.util.stream import AlignedStream
 
@@ -39,6 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from uuid import UUID
 
+    from dissect.fve.bde.c_bde import FVE_KEY_PROTECTOR
     from dissect.fve.bde.information import VmkInfoDatum
 
 Run = tuple[int, int, int]
@@ -92,6 +92,14 @@ class BDE:
             type_=FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO,
         )
         return [d.identifier for d in datums]
+
+    @property
+    def vmk_types(self) -> list[FVE_KEY_PROTECTOR]:
+        datums = self.information.dataset.find_datum(
+            role=FVE_DATUM_ROLE.VOLUME_MASTER_KEY_INFO,
+            type_=FVE_DATUM_TYPE.VOLUME_MASTER_KEY_INFO,
+        )
+        return [d.priority for d in datums]
 
     @property
     def sector_size(self) -> int:
@@ -198,11 +206,37 @@ class BDE:
         decrypted_key = vmk.decrypt(startup_key.external_key())
         return self.unlock(decrypted_key)
 
+    def unlock_with_external_key(self, key: bytes) -> BDE:
+        """Unlock this volume with a raw external key."""
+        for vmk in self.information.dataset.find_external_vmk():
+            try:
+                decrypted_key = vmk.decrypt(key)
+                return self.unlock(decrypted_key)
+            except Exception:  # noqa: PERF203
+                pass
+        raise ValueError("Unable to unlock with external key")
+
     def unlock_with_fvek(self, key: bytes) -> BDE:
         """Unlock this volume with a raw FVEK key."""
         self._fvek_type = self.information.dataset.fvek_type
         self._fvek = key
-        return self
+
+        magics = (
+            (0x03, b"NTFS"),
+            (0x36, b"FAT16"),
+            (0x52, b"FAT32"),
+            (0x03, b"EXFAT"),
+            (0x03, b"ReFS"),
+        )
+        with self.open() as fh:
+            buf = fh.read(512)
+            for offset, magic in magics:
+                if buf[offset : offset + len(magic)] == magic:
+                    return self
+
+        self._fvek = None
+        self._fvek_type = None
+        raise ValueError("Unable to unlock with FVEK, no plaintext filesystem found")
 
     def _unlock_with_user_key(
         self, vmks: list[VmkInfoDatum], user_key: bytes, identifier: UUID | str | None = None

@@ -85,7 +85,7 @@ class EowBitmap:
         self._record_data = fh.read(self.header.Size - self.header.RecordOffset[0])
 
     def __repr__(self) -> str:
-        return f"<EowBitmap region_offset=0x{self.region_offset:x} region_size=0x{self.region_size:x}>"
+        return f"<EowBitmap index={self.index} region_offset={self.region_offset:#x} region_size={self.region_size:#x}>"
 
     def is_valid(self) -> bool:
         return self._valid_checksum
@@ -96,6 +96,10 @@ class EowBitmap:
     @property
     def size(self) -> int:
         return self.header.Size
+
+    @property
+    def index(self) -> int:
+        return self.header.Index
 
     @property
     def region_offset(self) -> int:
@@ -158,7 +162,10 @@ class EowBitmapRecord:
         self.header.Crc32 = _crc32
 
     def __repr__(self) -> str:
-        return f"<EowBitmapRecord sequence_number={self.sequence_number} bitmap_size=0x{self.bitmap_size:x}>"
+        return (
+            f"<EowBitmapRecord sequence_number={self.sequence_number} bitmap_size={self.bitmap_size:#x}"
+            f" flags={self.flags:#x}>"
+        )
 
     def is_valid(self) -> bool:
         return self._valid_checksum
@@ -177,6 +184,10 @@ class EowBitmapRecord:
     @property
     def bitmap_size(self) -> int:
         return self.header.BitmapSize
+
+    @property
+    def flags(self) -> int:
+        return self.header.Flags
 
     @property
     def sequence_number(self) -> int:

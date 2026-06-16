@@ -20,6 +20,7 @@ from dissect.fve.bde.c_bde import (
     FVE_STATE,
     c_bde,
 )
+from dissect.fve.bde.c_tpm import c_tpm
 from dissect.fve.exception import InvalidHeaderError
 
 if TYPE_CHECKING:
@@ -152,6 +153,7 @@ class Dataset:
         offset = fh.tell()
         self.header = c_bde.FVE_DATASET(fh)
         self.identifier = UUID(bytes_le=self.header.Identification)
+        self.creation_time = ts.wintimestamp(self.header.CreationTime)
 
         fh.seek(offset)
         self._buf = fh.read(self.header.Size)
@@ -194,6 +196,22 @@ class Dataset:
         """Find the virtualization info datum."""
         for datum in self.find_datum(FVE_DATUM_ROLE.VIRTUALIZATION_INFO, FVE_DATUM_TYPE.VIRTUALIZATION_INFO):
             return datum
+        return None
+
+    def find_extended_information(
+        self,
+    ) -> (
+        c_bde.FVE_EXTENDED_INFORMATION_V1
+        | c_bde.FVE_EXTENDED_INFORMATION_V2
+        | c_bde.FVE_EXTENDED_INFORMATION_V3
+        | c_bde.FVE_EXTENDED_INFORMATION_V4
+        | c_bde.FVE_EXTENDED_INFORMATION_V5
+        | None
+    ):
+        """Find the extended information structure from the virtualization info datum."""
+        virtualization_info = self.find_virtualization_info()
+        if virtualization_info:
+            return virtualization_info.extended_information
         return None
 
     def find_startup_key(self) -> ExternalInfoDatum | None:
@@ -465,14 +483,44 @@ class AesCcmEncryptedDatum(Datum):
 
 
 class TpmEncryptedBlobDatum(Datum):
-    __struct__ = c_bde.FVE_DATUM_TPM_ENC_BLOB
+    __struct__ = c_tpm.FVE_DATUM_TPM_ENC_BLOB
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} role={self.role.name} pcr_bitmap={self.pcr_bitmap}>"
+        return (
+            f"<{self.__class__.__name__} "
+            f"role={self.role.name} "
+            f"pcr_bitmap={self.pcr_bitmap:x} "
+            f"pcr_policy={self.pcr_policy} "
+            f"pcr_digest={self.pcr_digest_algo:x} "
+            f"pcr_digest_algo={self.pcr_digest_algo}>"
+        )
 
     @property
-    def pcr_bitmap(self) -> int:
+    def pcr_bitmap(self) -> bytes:
         return self._datum.PcrBitmap
+
+    @property
+    def pcr_digest(self) -> bytes:
+        return self._datum.PcrDigest
+
+    @property
+    def pcr_digest_algo(self) -> str | None:
+        size = len(self.pcr_digest)
+        if size == c_tpm.TPM2_SHA1_DIGEST_SIZE:
+            return "sha1"
+        if size == c_tpm.TPM2_SHA256_DIGEST_SIZE:
+            return "sha256"
+        if size == c_tpm.TPM2_SHA384_DIGEST_SIZE:
+            return "sha384"
+        if size == c_tpm.TPM2_SHA512_DIGEST_SIZE:
+            return "sha512"
+        return None
+
+    @property
+    def pcr_policy(self) -> list[int]:
+        """Calculate the PCR validation profile from the PCR bitmap."""
+        bitmap = int.from_bytes(self._datum.PcrBitmap2, "little")
+        return [c_tpm.PCR_BITMAP(i) for i in range(bitmap.bit_length()) if (bitmap >> i) & 1]
 
     @property
     def data(self) -> bytes:
@@ -484,7 +532,22 @@ class ValidationEntry:
         self._entry = c_bde.FVE_DATUM_VALIDATION_ENTRY(fh)
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} hash={self.hash}>"
+        return (
+            f"<{self.__class__.__name__} entry_type={self.entry_type} entry_policy={self.entry_policy}"
+            f"bcd_type={self.bcd_type} hash={self.hash}>"
+        )
+
+    @property
+    def entry_type(self) -> int:
+        return self._entry.EntryType
+
+    @property
+    def entry_policy(self) -> int:
+        return self._entry.EntryPolicy
+
+    @property
+    def bcd_type(self) -> int:
+        return self._entry.BcdType
 
     @property
     def hash(self) -> bytes:
@@ -518,6 +581,10 @@ class VmkInfoDatum(Datum):
     @property
     def datetime(self) -> datetime.datetime:
         return ts.wintimestamp(self._datum.DateTime)
+
+    @property
+    def vmk_hints(self) -> int:
+        return self._datum.VmkHints
 
     @property
     def priority(self) -> FVE_KEY_PROTECTOR:
@@ -638,14 +705,45 @@ class UpdateDatum(Datum):
     __complex__ = True
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} role={self.role.name}>"
+        return f"<{self.__class__.__name__} role={self.role.name} update_flags={self.update_flags}>"
+
+    @property
+    def update_flags(self) -> int:
+        return self._datum.UpdateFlags
+
+    @property
+    def rmw_signature(self) -> int:
+        return self._datum.RmwSignature
 
 
 class ErrorLogDatum(Datum):
     __struct__ = c_bde.FVE_DATUM_ERROR_LOG
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} role={self.role.name}>"
+        return (
+            f"<{self.__class__.__name__} role={self.role.name} "
+            f"error_code={self.error_code} status={self.status} flags={self.flags}>"
+        )
+
+    @property
+    def error_code(self) -> int:
+        return self._datum.ErrorCode
+
+    @property
+    def status(self) -> int:
+        return self._datum.Status
+
+    @property
+    def volume_id(self) -> bytes:
+        return self._datum.VolumeId
+
+    @property
+    def optional_id(self) -> bytes:
+        return self._datum.OptionalId
+
+    @property
+    def flags(self) -> int:
+        return self._datum.Flags
 
 
 class AsymmetricEncryptedDatum(Datum):
@@ -693,6 +791,34 @@ class VirtualizationInfoDatum(Datum):
     def virtualized_block_size(self) -> int:
         return self._datum.VirtualizedBlockSize
 
+    @property
+    def extended_information(
+        self,
+    ) -> (
+        c_bde.FVE_EXTENDED_INFORMATION_V1
+        | c_bde.FVE_EXTENDED_INFORMATION_V2
+        | c_bde.FVE_EXTENDED_INFORMATION_V3
+        | c_bde.FVE_EXTENDED_INFORMATION_V4
+        | c_bde.FVE_EXTENDED_INFORMATION_V5
+        | None
+    ):
+        if not self.data_segment:
+            return None
+
+        struct_versions = {
+            1: c_bde.FVE_EXTENDED_INFORMATION_V1,
+            2: c_bde.FVE_EXTENDED_INFORMATION_V2,
+            3: c_bde.FVE_EXTENDED_INFORMATION_V3,
+            4: c_bde.FVE_EXTENDED_INFORMATION_V4,
+            5: c_bde.FVE_EXTENDED_INFORMATION_V5,
+        }
+
+        version = c_bde.uint16(self.data_segment[:2])
+        if version not in struct_versions:
+            raise NotImplementedError(f"Unknown FVE_EXTENDED_INFORMATION version: {version}")
+
+        return struct_versions[version](self.data_segment)
+
 
 class ConcatHashKeyDatum(Datum):
     __struct__ = c_bde.FVE_DATUM_CONCAT_HASH_KEY
@@ -700,12 +826,36 @@ class ConcatHashKeyDatum(Datum):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} role={self.role.name}>"
 
+    @property
+    def concat_hash_buffer(self) -> bytes:
+        return self._datum.ConcatHashBuffer
+
 
 class BackupInfoDatum(Datum):
     __struct__ = c_bde.FVE_DATUM_BACKUP_INFO
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} role={self.role.name}>"
+        return (
+            f"<{self.__class__.__name__} role={self.role.name} create_datetime={self.create_datetime} "
+            f"backup_datetime={self.backup_datetime} backup_type={self.backup_datetime} "
+            f"backup_flags={self.backup_flags}>"
+        )
+
+    @property
+    def create_datetime(self) -> datetime.datetime:
+        return ts.wintimestamp(self._datum.CreateDateTime)
+
+    @property
+    def backup_datetime(self) -> datetime.datetime:
+        return ts.wintimestamp(self._datum.BackupDateTime)
+
+    @property
+    def backup_type(self) -> int:
+        return self._datum.Type
+
+    @property
+    def backup_flags(self) -> int:
+        return self._datum.Flags
 
 
 class AesCbc256HmacSha512EncryptedDatum(Datum):
