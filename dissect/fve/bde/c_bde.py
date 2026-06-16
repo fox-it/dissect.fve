@@ -8,202 +8,198 @@ bde_def = """
 /* ======== Volume header information ======== */
 
 typedef struct _FVE_GUID_RECOGNITION {
-    CHAR        Guid[16];
-    QWORD       InformationOffset[3];
+    CHAR                    Guid[16];
+    QWORD                   InformationOffset[3];
 } FVE_GUID_RECOGNITION;
 
 typedef struct _FVE_EOW_GUID_RECOGNITION {
-    CHAR        Guid[16];
-    QWORD       InformationOffset[3];
-    QWORD       EowOffset[2];
+    CHAR                    Guid[16];
+    QWORD                   InformationOffset[3];
+    QWORD                   EowOffset[2];
 } FVE_EOW_GUID_RECOGNITION;
 
 typedef struct _BIOS_PARAMETER_BLOCK {
-    USHORT      BytesPerSector;
-    UCHAR       SectorsPerCluster;
-    USHORT      ReservedSectors;
-    UCHAR       Fats;
-    USHORT      RootEntries;
-    USHORT      Sectors;
-    UCHAR       Media;
-    USHORT      SectorsPerFat;
-    USHORT      SectorsPerTrack;
-    USHORT      Heads;
-    ULONG       HiddenSectors;
-    ULONG       LargeSectors;
+    USHORT                  BytesPerSector;
+    UCHAR                   SectorsPerCluster;
+    USHORT                  ReservedSectors;
+    UCHAR                   Fats;
+    USHORT                  RootEntries;
+    USHORT                  Sectors;
+    UCHAR                   Media;
+    USHORT                  SectorsPerFat;
+    USHORT                  SectorsPerTrack;
+    USHORT                  Heads;
+    ULONG                   HiddenSectors;
+    ULONG                   LargeSectors;
 } BIOS_PARAMETER_BLOCK;
 
 typedef struct _BOOT_SECTOR {
-    CHAR        Jump[3];
-    CHAR        Oem[8];
+    CHAR                    Jump[3];
+    CHAR                    Oem[8];
     BIOS_PARAMETER_BLOCK    Bpb;
-    CHAR        Unused0[20];
+    CHAR                    Unused0[20];
     union {
-        ULONG64 InformationLcn;
-        ULONG64 Mft2StartLcn;
+        ULONG64             InformationLcn;
+    ULONG64                 Mft2StartLcn;
     };
-    CHAR        Unused1[8];
-    ULONG64     PartitionLength;
-    CHAR        Unused2[28];
-    UCHAR       BytesPerSectorShift;
-    UCHAR       SectorsPerClusterShift;
-    CHAR        Unused3[402];
+    CHAR                    Unused1[8];
+    ULONG64                 PartitionLength;
+    CHAR                    Unused2[28];
+    UCHAR                   BytesPerSectorShift;
+    UCHAR                   SectorsPerClusterShift;
+    CHAR                    Unused3[402];
 } BOOT_SECTOR;
+
 
 /* ======== FVE information and dataset ======== */
 
 enum FVE_STATE {
-    DECRYPTED                   = 1,        /* Decrypted state */
-    SWITCHING_DIRTY             = 2,        /* In-progress encryption or decryption of large volumes */
-                                            /* StateSize will be non-zero, and there will be a conversion log */
-    PAUSED                      = 3,        /* Seen on Vista volume with paused encryption/decryption */
-    ENCRYPTED                   = 4,        /* The most common state */
-    SWITCHING                   = 5,        /* In-progress encryption or decryption of small volumes */
-                                            /* Seen when detaching VHD during encryption/decryption of small disks */
+    DECRYPTED                       = 1,        // Decrypted state
+    SWITCHING_DIRTY                 = 2,        // In-progress encryption or decryption of large volumes
+                                                // StateSize will be non-zero, and there will be a conversion log
+    PAUSED                          = 3,        // Seen on Vista volume with paused encryption/decryption
+    ENCRYPTED                       = 4,        // The most common state
+    SWITCHING                       = 5,        // In-progress encryption or decryption of small volumes
+                                                // Seen when detaching VHD during encryption/decryption of small disks
 };
 
 enum FVE_KEY_TYPE {
-    NONE                        = 0x0000,
-    EXTERNAL                    = 0x0005,   /* External VMKs have a USE_KEY with this key type */
+    NONE                            = 0x0000,
+    EXTERNAL                        = 0x0005,   // External VMKs have a USE_KEY with this key type
 
-    STRETCH_KEY                 = 0x1000,
-    STRETCH_KEY_1               = 0x1001,
-    AES_CCM_256_0               = 0x2000,
-    AES_CCM_256_1               = 0x2001,
-    EXTERN_KEY                  = 0x2002,
-    VMK                         = 0x2003,
-    AES_CCM_256_2               = 0x2004,
-    HASH_256                    = 0x2005,
+    STRETCH_KEY                     = 0x1000,
+    STRETCH_KEY_1                   = 0x1001,
+    AES_CCM_256_0                   = 0x2000,
+    AES_CCM_256_1                   = 0x2001,
+    EXTERN_KEY                      = 0x2002,
+    VMK                             = 0x2003,
+    AES_CCM_256_2                   = 0x2004,
+    HASH_256                        = 0x2005,
 
-    AES_128_DIFFUSER            = 0x8000,
-    AES_256_DIFFUSER            = 0x8001,
-    AES_128                     = 0x8002,
-    AES_256                     = 0x8003,
-    AES_XTS_128                 = 0x8004,
-    AES_XTS_256                 = 0x8005,
+    AES_128_DIFFUSER                = 0x8000,
+    AES_256_DIFFUSER                = 0x8001,
+    AES_128                         = 0x8002,
+    AES_256                         = 0x8003,
+    AES_XTS_128                     = 0x8004,
+    AES_XTS_256                     = 0x8005,
 };
 
 flag FVE_KEY_PROTECTOR {
-    CLEAR                       = 0x0000,   /* Also known as "obfuscated" */
-    TPM                         = 0x0100,
-    EXTERNAL                    = 0x0200,   /* Startup key */
-    TPM_PIN                     = 0x0400,
-    RECOVERY_PASSWORD           = 0x0800,   /* Recovery password */
-    PASSPHRASE                  = 0x2000,   /* User passphrase */
+    CLEAR                           = 0x0000,   // Also known as "obfuscated"
+    TPM                             = 0x0100,
+    EXTERNAL                        = 0x0200,   // Startup key
+    TPM_PIN                         = 0x0400,
+    RECOVERY_PASSWORD               = 0x0800,   // Recovery password
+    PASSPHRASE                      = 0x2000,   // User passphrase
 };
 
 flag FVE_KEY_FLAG {
-    NONE                        = 0x00,
-    ENHANCED_PIN                = 0x04,
-    ENHANCED_CRYPTO             = 0x10,
-    PBKDF2                      = 0x40,
+    NONE                            = 0x00,
+    ENHANCED_PIN                    = 0x04,
+    ENHANCED_CRYPTO                 = 0x10,
+    PBKDF2                          = 0x40,
 };
 
 enum FVE_DATUM_ROLE : USHORT {
-    PROPERTY                    = 0x0000,
-
-    UNKNOWN_1                   = 0x0001,
-
-    VOLUME_MASTER_KEY_INFO      = 0x0002,
-    FULL_VOLUME_ENCRYPTION_KEY  = 0x0003,
-    VALIDATION                  = 0x0004,
-
-    UNKNOWN_5                   = 0x0005,
-
-    STARTUP_KEY                 = 0x0006,
-    DESCRIPTION                 = 0x0007,
-
-    UNKNOWN_8                   = 0x0008,
-    UNKNOWN_9                   = 0x0009,
-    UNKNOWN_A                   = 0x000A,
-    AUTO_UNLOCK                 = 0x000B,
+    PROPERTY                        = 0x0000,
+    UNKNOWN_1                       = 0x0001,
+    VOLUME_MASTER_KEY_INFO          = 0x0002,
+    FULL_VOLUME_ENCRYPTION_KEY      = 0x0003,
+    VALIDATION                      = 0x0004,
+    UNKNOWN_5                       = 0x0005,
+    STARTUP_KEY                     = 0x0006,
+    DESCRIPTION                     = 0x0007,
+    UNKNOWN_8                       = 0x0008,
+    UNKNOWN_9                       = 0x0009,
+    UNKNOWN_A                       = 0x000A,
+    AUTO_UNLOCK                     = 0x000B,
     FULL_VOLUME_ENCRYPTION_KEY_2    = 0x000C,
-    UNKNOWN_D                   = 0x000D,
-    UNKNOWN_E                   = 0x000E,
-
-    VIRTUALIZATION_INFO         = 0x000F,
-    VALIDATION_HASH             = 0x0011,
+    UNKNOWN_D                       = 0x000D,
+    UNKNOWN_E                       = 0x000E,
+    VIRTUALIZATION_INFO             = 0x000F,
+    VALIDATION_HASH                 = 0x0011,
 };
 
 enum FVE_DATUM_TYPE : USHORT {
-    ERASED                      = 0x0000,
-    KEY                         = 0x0001,
-    UNICODE                     = 0x0002,
-    STRETCH_KEY                 = 0x0003,
-    USE_KEY                     = 0x0004,
-    AES_CCM_ENCRYPTED_KEY       = 0x0005,
-    TPM_ENCRYPTED_BLOB          = 0x0006,
-    VALIDATION_INFO             = 0x0007,
-    VOLUME_MASTER_KEY_INFO      = 0x0008,
-    EXTERNAL_INFO               = 0x0009,
-    UPDATE                      = 0x000A,
-    ERROR_LOG                   = 0x000B,
-    ASYMMETRIC_ENCRYPTED_KEY    = 0x000C,
-    EXPORTED_KEY                = 0x000D,
-    PUBLIC_KEY_INFO             = 0x000E,
-    VIRTUALIZATION_INFO         = 0x000F,
-    SIMPLE_1                    = 0x0010,
-    SIMPLE_2                    = 0x0011,
-    CONCAT_HASH_KEY             = 0x0012,
-    SIMPLE_3                    = 0x0013,
-    SIMPLE_LARGE                = 0x0014,
-    BACKUP_INFO                 = 0x0015,
+    ERASED                          = 0x0000,
+    KEY                             = 0x0001,
+    UNICODE                         = 0x0002,
+    STRETCH_KEY                     = 0x0003,
+    USE_KEY                         = 0x0004,
+    AES_CCM_ENCRYPTED_KEY           = 0x0005,
+    TPM_ENCRYPTED_BLOB              = 0x0006,
+    VALIDATION_INFO                 = 0x0007,
+    VOLUME_MASTER_KEY_INFO          = 0x0008,
+    EXTERNAL_INFO                   = 0x0009,
+    UPDATE                          = 0x000A,
+    ERROR_LOG                       = 0x000B,
+    ASYMMETRIC_ENCRYPTED_KEY        = 0x000C,
+    EXPORTED_KEY                    = 0x000D,
+    PUBLIC_KEY_INFO                 = 0x000E,
+    VIRTUALIZATION_INFO             = 0x000F,
+    SIMPLE_1                        = 0x0010,
+    SIMPLE_2                        = 0x0011,
+    CONCAT_HASH_KEY                 = 0x0012,
+    SIMPLE_3                        = 0x0013,
+    SIMPLE_LARGE                    = 0x0014,
+    BACKUP_INFO                     = 0x0015,
 };
 
 enum FVE_BACKUP_METHOD : USHORT {
-    ACTIVE_DIRECTORY            = 0x0001,
-    ONE_DRIVE                   = 0x0002,
-    UNKNOWN_3                   = 0x0003,
-    AZURE_ACTIVE_DIRECTORY      = 0x0004,
-    UNKNOWN_5                   = 0x0005,
-    UNKNOWN_6                   = 0x0006,
-    UNKNOWN_7                   = 0x0007,
-    FILE                        = 0x0008,
-    UNKNOWN_9                   = 0x0009,
-    PRINTED                     = 0x0010,
+    ACTIVE_DIRECTORY                = 0x0001,
+    ONE_DRIVE                       = 0x0002,
+    UNKNOWN_3                       = 0x0003,
+    AZURE_ACTIVE_DIRECTORY          = 0x0004,
+    UNKNOWN_5                       = 0x0005,
+    UNKNOWN_6                       = 0x0006,
+    UNKNOWN_7                       = 0x0007,
+    FILE                            = 0x0008,
+    UNKNOWN_9                       = 0x0009,
+    PRINTED                         = 0x0010,
 };
 
 typedef struct _FVE_INFORMATION {
-    CHAR        Signature[8];
-    USHORT      HeaderSize;
-    USHORT      Version;
-    USHORT      CurrentState;
-    USHORT      NextState;
-    ULONG64     StateOffset;
-    ULONG       StateSize;
-    ULONG       VirtualizedSectors;
-    ULONG64     InformationOffset[3];
+    CHAR                            Signature[8];
+    USHORT                          HeaderSize;
+    USHORT                          Version;
+    USHORT                          CurrentState;
+    USHORT                          NextState;
+    ULONG64                         StateOffset;
+    ULONG                           StateSize;
+    ULONG                           VirtualizedSectors;
+    ULONG64                         InformationOffset[3];
     union {
-        ULONG64 Mft2StartLcn;
-        ULONG64 VirtualizedBlockOffset;
+        ULONG64                     Mft2StartLcn;
+        ULONG64                     VirtualizedBlockOffset;
     };
 } FVE_INFORMATION;
 
 typedef struct _FVE_DATASET {
-    ULONG       Size;
-    ULONG       Version;
-    ULONG       StartOffset;
-    ULONG       EndOffset;
-    CHAR        Identification[16];
-    ULONG       NonceCounter;
-    USHORT      FvekType;
-    USHORT      FvekPrefType;
-    ULONG64     CreationTime;
+    ULONG                           Size;
+    ULONG                           Version;
+    ULONG                           StartOffset;
+    ULONG                           EndOffset;
+    CHAR                            Identification[16];
+    ULONG                           NonceCounter;
+    USHORT                          FvekType;
+    USHORT                          FvekPrefType;
+    ULONG64                         CreationTime;
 } FVE_DATASET;
 
 typedef struct _FVE_DATUM {
-    USHORT      Size;
-    USHORT      Role;
-    USHORT      Type;
-    USHORT      Flags;
+    USHORT                          Size;
+    USHORT                          Role;
+    USHORT                          Type;
+    USHORT                          Flags;
 } FVE_DATUM;
 
 typedef struct _FVE_VALIDATION {
-    USHORT      Size;
-    USHORT      Version;
-    ULONG       Crc32;
-    // FVE_DATUM   IntegrityCheck;
+    USHORT                          Size;
+    USHORT                          Version;
+    ULONG                           Crc32;
+    // FVE_DATUM                    IntegrityCheck;
 } FVE_VALIDATION;
+
 
 /* ======== FVE datums ======== */
 
@@ -222,11 +218,11 @@ typedef struct _FVE_DATUM_GUID {
 typedef struct _FVE_DATUM_KEY {
     USHORT      KeyType;
     USHORT      KeyFlags;
-    // CHAR        Data[];
+    // CHAR     Data[];
 } FVE_DATUM_KEY;
 
 typedef struct _FVE_DATUM_UNICODE {
-    // wchar       Text[];
+    // wchar    Text[];
 } FVE_DATUM_UNICODE;
 
 typedef struct _FVE_DATUM_STRETCH_KEY {
@@ -249,13 +245,14 @@ typedef struct _FVE_NONCE {
 typedef struct _FVE_DATUM_AESCCM_ENC {
     FVE_NONCE   Nonce;
     CHAR        MAC[16];
-    // CHAR        Data[];
+    // CHAR     Data[];
 } FVE_DATUM_AESCCM_ENC;
 
-// typedef struct _FVE_DATUM_TPM_ENC_BLOB {
-//     ULONG       PcrBitmap;
-//     // CHAR        Data[];
-// } FVE_DATUM_TPM_ENC_BLOB;
+// See c_tpm.py for big endian struct
+typedef struct _FVE_DATUM_TPM_ENC_BLOB {
+    ULONG       PcrBitmap;
+    // CHAR     Data[];
+} FVE_DATUM_TPM_ENC_BLOB;
 
 typedef struct _FVE_DATUM_VALIDATION_ENTRY {
     USHORT      EntryType;
@@ -294,15 +291,15 @@ typedef struct _FVE_DATUM_ERROR_LOG {
 } FVE_DATUM_ERROR_LOG;
 
 typedef struct _FVE_DATUM_ASYM_ENC_BLOB {
-    // CHAR        EncryptedData[1];
+    // CHAR     EncryptedData[1];
 } FVE_DATUM_ASYM_ENC_BLOB;
 
 typedef struct _FVE_DATUM_EXPORTED_PUBLIC_KEY {
-    // CHAR        KeyData[1];
+    // CHAR     KeyData[1];
 } FVE_DATUM_EXPORTED_PUBLIC_KEY;
 
 typedef struct _FVE_DATUM_PUBLIC_KEY_INFO {
-    // CHAR        Data[1];
+    // CHAR     Data[1];
 } FVE_DATUM_PUBLIC_KEY_INFO;
 
 typedef struct _FVE_DATUM_VIRTUALIZATION_INFO {
@@ -324,8 +321,9 @@ typedef struct _FVE_DATUM_BACKUP_INFO {
 typedef struct _FVE_DATUM_AESCBC256_HMAC_SHA512_ENC {
     CHAR        Iv[16];
     CHAR        Mac[64];
-    // CHAR        Data[];
+    // CHAR     Data[];
 } FVE_DATUM_AESCBC256_HMAC_SHA512_ENC;
+
 
 /* ======== Extended Information ======== */
 
@@ -407,6 +405,7 @@ typedef struct _FVE_EXTENDED_INFORMATION_V5 {
     ULONG64     IceVerifySize;
 } FVE_EXTENDED_INFORMATION_V5;
 
+
 /* ======== EOW structures ======== */
 
 typedef struct _FVE_EOW_INFORMATION {
@@ -445,8 +444,9 @@ typedef struct _FVE_EOW_BITMAP_RECORD {
     ULONG64     SequenceNumber;
     ULONG       Flags;
     ULONG       Crc32;
-    // ULONG       Bitmap[1];
+    // ULONG     Bitmap[1];
 } FVE_EOW_BITMAP_RECORD;
+
 
 /* ======== Conversion log structures ======== */
 
