@@ -8,46 +8,46 @@ bde_def = """
 /* ======== Volume header information ======== */
 
 typedef struct _FVE_GUID_RECOGNITION {
-    CHAR                    Guid[16];
-    QWORD                   InformationOffset[3];
+    CHAR        Guid[16];
+    QWORD       InformationOffset[3];
 } FVE_GUID_RECOGNITION;
 
 typedef struct _FVE_EOW_GUID_RECOGNITION {
-    CHAR                    Guid[16];
-    QWORD                   InformationOffset[3];
-    QWORD                   EowOffset[2];
+    CHAR        Guid[16];
+    QWORD       InformationOffset[3];
+    QWORD       EowOffset[2];
 } FVE_EOW_GUID_RECOGNITION;
 
 typedef struct _BIOS_PARAMETER_BLOCK {
-    USHORT                  BytesPerSector;
-    UCHAR                   SectorsPerCluster;
-    USHORT                  ReservedSectors;
-    UCHAR                   Fats;
-    USHORT                  RootEntries;
-    USHORT                  Sectors;
-    UCHAR                   Media;
-    USHORT                  SectorsPerFat;
-    USHORT                  SectorsPerTrack;
-    USHORT                  Heads;
-    ULONG                   HiddenSectors;
-    ULONG                   LargeSectors;
+    USHORT      BytesPerSector;
+    UCHAR       SectorsPerCluster;
+    USHORT      ReservedSectors;
+    UCHAR       Fats;
+    USHORT      RootEntries;
+    USHORT      Sectors;
+    UCHAR       Media;
+    USHORT      SectorsPerFat;
+    USHORT      SectorsPerTrack;
+    USHORT      Heads;
+    ULONG       HiddenSectors;
+    ULONG       LargeSectors;
 } BIOS_PARAMETER_BLOCK;
 
 typedef struct _BOOT_SECTOR {
-    CHAR                    Jump[3];
-    CHAR                    Oem[8];
+    CHAR        Jump[3];
+    CHAR        Oem[8];
     BIOS_PARAMETER_BLOCK    Bpb;
-    CHAR                    Unused0[20];
+    CHAR        Unused0[20];
     union {
-        ULONG64             InformationLcn;
-    ULONG64                 Mft2StartLcn;
+        ULONG64 InformationLcn;
+    ULONG64     Mft2StartLcn;
     };
-    CHAR                    Unused1[8];
-    ULONG64                 PartitionLength;
-    CHAR                    Unused2[28];
-    UCHAR                   BytesPerSectorShift;
-    UCHAR                   SectorsPerClusterShift;
-    CHAR                    Unused3[402];
+    CHAR        Unused1[8];
+    ULONG64     PartitionLength;
+    CHAR        Unused2[28];
+    UCHAR       BytesPerSectorShift;
+    UCHAR       SectorsPerClusterShift;
+    CHAR        Unused3[402];
 } BOOT_SECTOR;
 
 
@@ -159,45 +159,45 @@ enum FVE_BACKUP_METHOD : USHORT {
 };
 
 typedef struct _FVE_INFORMATION {
-    CHAR                            Signature[8];
-    USHORT                          HeaderSize;
-    USHORT                          Version;
-    USHORT                          CurrentState;
-    USHORT                          NextState;
-    ULONG64                         StateOffset;
-    ULONG                           StateSize;
-    ULONG                           VirtualizedSectors;
-    ULONG64                         InformationOffset[3];
+    CHAR        Signature[8];
+    USHORT      HeaderSize;
+    USHORT      Version;
+    USHORT      CurrentState;
+    USHORT      NextState;
+    ULONG64     StateOffset;
+    ULONG       StateSize;
+    ULONG       VirtualizedSectors;
+    ULONG64     InformationOffset[3];
     union {
-        ULONG64                     Mft2StartLcn;
-        ULONG64                     VirtualizedBlockOffset;
+        ULONG64 Mft2StartLcn;
+        ULONG64 VirtualizedBlockOffset;
     };
 } FVE_INFORMATION;
 
 typedef struct _FVE_DATASET {
-    ULONG                           Size;
-    ULONG                           Version;
-    ULONG                           StartOffset;
-    ULONG                           EndOffset;
-    CHAR                            Identification[16];
-    ULONG                           NonceCounter;
-    USHORT                          FvekType;
-    USHORT                          FvekPrefType;
-    ULONG64                         CreationTime;
+    ULONG       Size;
+    ULONG       Version;
+    ULONG       StartOffset;
+    ULONG       EndOffset;
+    CHAR        Identification[16];
+    ULONG       NonceCounter;
+    USHORT      FvekType;
+    USHORT      FvekPrefType;
+    ULONG64     CreationTime;
 } FVE_DATASET;
 
 typedef struct _FVE_DATUM {
-    USHORT                          Size;
-    USHORT                          Role;
-    USHORT                          Type;
-    USHORT                          Flags;
+    USHORT      Size;
+    USHORT      Role;
+    USHORT      Type;
+    USHORT      Flags;
 } FVE_DATUM;
 
 typedef struct _FVE_VALIDATION {
-    USHORT                          Size;
-    USHORT                          Version;
-    ULONG                           Crc32;
-    // FVE_DATUM                    IntegrityCheck;
+    USHORT      Size;
+    USHORT      Version;
+    ULONG       Crc32;
+    // FVE_DATUM    IntegrityCheck;
 } FVE_VALIDATION;
 
 
@@ -218,11 +218,11 @@ typedef struct _FVE_DATUM_GUID {
 typedef struct _FVE_DATUM_KEY {
     USHORT      KeyType;
     USHORT      KeyFlags;
-    // CHAR     Data[];
+    // CHAR     Data[1];
 } FVE_DATUM_KEY;
 
 typedef struct _FVE_DATUM_UNICODE {
-    // wchar    Text[];
+    // wchar    Text[1];
 } FVE_DATUM_UNICODE;
 
 typedef struct _FVE_DATUM_STRETCH_KEY {
@@ -245,13 +245,13 @@ typedef struct _FVE_NONCE {
 typedef struct _FVE_DATUM_AESCCM_ENC {
     FVE_NONCE   Nonce;
     CHAR        MAC[16];
-    // CHAR     Data[];
+    // CHAR     Data[1];
 } FVE_DATUM_AESCCM_ENC;
 
 // See c_tpm.py for big endian struct
 typedef struct _FVE_DATUM_TPM_ENC_BLOB {
     ULONG       PcrBitmap;
-    // CHAR     Data[];
+    // CHAR     Data[1];
 } FVE_DATUM_TPM_ENC_BLOB;
 
 typedef struct _FVE_DATUM_VALIDATION_ENTRY {
@@ -262,7 +262,7 @@ typedef struct _FVE_DATUM_VALIDATION_ENTRY {
 } FVE_DATUM_VALIDATION_ENTRY;
 
 typedef struct _FVE_DATUM_VALIDATION_INFO {
-    // FVE_DATUM_VALIDATION_ENTRY  AllowList[];
+    // FVE_DATUM_VALIDATION_ENTRY  AllowList[1];
 } FVE_DATUM_VALIDATION_INFO;
 
 typedef struct _FVE_DATUM_VMK_INFO {
@@ -312,16 +312,16 @@ typedef struct _FVE_DATUM_CONCAT_HASH_KEY {
 } FVE_DATUM_CONCAT_HASH_KEY;
 
 typedef struct _FVE_DATUM_BACKUP_INFO {
-    ULONG64             CreateDateTime;
-    ULONG64             BackupDateTime;
+    ULONG64     CreateDateTime;
+    ULONG64     BackupDateTime;
     FVE_BACKUP_METHOD   Type;
-    USHORT              Flags;
+    USHORT      Flags;
 } FVE_DATUM_BACKUP_INFO;
 
 typedef struct _FVE_DATUM_AESCBC256_HMAC_SHA512_ENC {
     CHAR        Iv[16];
     CHAR        Mac[64];
-    // CHAR     Data[];
+    // CHAR     Data[1];
 } FVE_DATUM_AESCBC256_HMAC_SHA512_ENC;
 
 
@@ -444,7 +444,7 @@ typedef struct _FVE_EOW_BITMAP_RECORD {
     ULONG64     SequenceNumber;
     ULONG       Flags;
     ULONG       Crc32;
-    // ULONG     Bitmap[1];
+    // ULONG    Bitmap[1];
 } FVE_EOW_BITMAP_RECORD;
 
 
