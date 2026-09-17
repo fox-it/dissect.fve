@@ -85,6 +85,8 @@ class BDE:
         self._fvek_type = None
         self._fvek = None
 
+        self._used_key = None
+
     @property
     def identifiers(self) -> list[UUID]:
         datums = self.information.dataset.find_datum(
@@ -161,6 +163,7 @@ class BDE:
         if not isinstance(fvek, KeyDatum):
             raise TypeError("Invalid unboxed FVEK")
 
+        self._used_key = key
         self._fvek_datum = fvek
         self._fvek_type = fvek.key_type
         self._fvek = fvek.data
