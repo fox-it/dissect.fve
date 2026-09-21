@@ -7,6 +7,7 @@ from typing import BinaryIO
 import pytest
 
 from dissect.fve.bde import bde, c_bde, is_bde_volume
+from dissect.fve.bde.information import KeyDatum
 from tests._util import open_file, open_file_gz
 
 
@@ -29,6 +30,9 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, fvek_type: c
     assert bde_obj.has_passphrase()
     bde_obj.unlock_with_passphrase(passphrase)
     assert bde_obj.unlocked
+
+    assert isinstance(bde_obj._fvek, bytes)
+    assert isinstance(bde_obj._vmk, KeyDatum)
 
     _verify_crypto_stream(bde_obj)
 

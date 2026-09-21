@@ -81,11 +81,10 @@ class BDE:
         if self._valid_eow_information:
             self.eow_information = self._valid_eow_information[0]
 
+        self._vmk = None
         self._fvek_datum = None
         self._fvek_type = None
         self._fvek = None
-
-        self._used_key = None
 
     @property
     def identifiers(self) -> list[UUID]:
@@ -163,7 +162,7 @@ class BDE:
         if not isinstance(fvek, KeyDatum):
             raise TypeError("Invalid unboxed FVEK")
 
-        self._used_key = key
+        self._vmk = key
         self._fvek_datum = fvek
         self._fvek_type = fvek.key_type
         self._fvek = fvek.data
