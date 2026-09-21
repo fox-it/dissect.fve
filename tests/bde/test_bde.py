@@ -31,8 +31,10 @@ def _verify_passphrase_crypto(test_file: BinaryIO, passphrase: str, fvek_type: c
     bde_obj.unlock_with_passphrase(passphrase)
     assert bde_obj.unlocked
 
+    assert isinstance(bde_obj._fvek_datum, KeyDatum)
     assert isinstance(bde_obj._fvek, bytes)
-    assert isinstance(bde_obj._vmk, KeyDatum)
+    assert isinstance(bde_obj._vmk_datum, KeyDatum)
+    assert isinstance(bde_obj._vmk, bytes)
 
     _verify_crypto_stream(bde_obj)
 
