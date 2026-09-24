@@ -81,6 +81,8 @@ class BDE:
         if self._valid_eow_information:
             self.eow_information = self._valid_eow_information[0]
 
+        self._vmk_datum = None
+        self._vmk = None
         self._fvek_datum = None
         self._fvek_type = None
         self._fvek = None
@@ -149,17 +151,22 @@ class BDE:
         """Return whether this volume can be unlocked with a BEK file."""
         return len(list(self.information.dataset.find_external_vmk())) != 0
 
-    def unlock(self, key: bytes) -> BDE:
+    def unlock(self, key: KeyDatum | bytes) -> BDE:
         """Unlock this volume with the specified encryption key."""
         self.information.check_integrity(key)
 
-        fvek = self.information.dataset.find_fvek()
-        if not fvek:
+        if not (fvek := self.information.dataset.find_fvek()):
             raise ValueError("No FVEK found")
 
         fvek = fvek.unbox(key)
         if not isinstance(fvek, KeyDatum):
             raise TypeError("Invalid unboxed FVEK")
+
+        if isinstance(key, KeyDatum):
+            self._vmk_datum = key
+            self._vmk = key.data
+        else:
+            self._vmk = key
 
         self._fvek_datum = fvek
         self._fvek_type = fvek.key_type
